@@ -1,0 +1,12 @@
+---
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: AlwaysBreak
+BinPackParameters: false
+ColumnLimit: 100
+IndentWidth: 4
+PointerAlignment: Left
+SortIncludes: CaseInsensitive
+TabWidth: 4
+UseTab: Always
+
+...
