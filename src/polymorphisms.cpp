@@ -1,6 +1,6 @@
 #include "polymorphisms.hpp"
 
-#include "src/data_structures.hpp"
+#include "data_structures.hpp"
 #include "util.hpp"
 #include <fmt/core.h>
 #include <numeric>

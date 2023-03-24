@@ -35,15 +35,4 @@ auto call(std::string const& command, std::string const& input) -> std::optional
 	}
 	return result;
 }
-
-// static constexpr auto remove_nullopts =
-// 	std::views::filter([](auto const& maybe_csp) -> bool { return maybe_csp.has_value(); }) |
-// 	std::views::transform([](auto const& maybe_csp) { return maybe_csp.value(); });
-
-// template <typename T> auto invoke(std::function<void(T const&)> fn) {
-// 	return std::views::filter([&](T const& t) {
-// 		fn(t);
-// 		return true;
-// 	});
-// }
 } // namespace util

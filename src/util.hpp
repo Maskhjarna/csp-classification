@@ -66,9 +66,7 @@ auto lift_optional(std::function<U(T)> fn) -> std::function<std::optional<U>(std
 } // namespace util
 
 template <typename T> struct fmt::formatter<std::vector<T>> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(std::vector<T> const& v, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -77,9 +75,7 @@ template <typename T> struct fmt::formatter<std::vector<T>> {
 };
 
 template <typename T> struct fmt::formatter<RuntimeArray<T>> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(RuntimeArray<T> const& array, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -88,9 +84,7 @@ template <typename T> struct fmt::formatter<RuntimeArray<T>> {
 };
 
 template <> struct fmt::formatter<Relation> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(Relation const& relation, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -99,9 +93,7 @@ template <> struct fmt::formatter<Relation> {
 };
 
 template <typename T> struct fmt::formatter<std::optional<T>> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(std::optional<T> const& maybe_t, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -113,9 +105,7 @@ template <typename T> struct fmt::formatter<std::optional<T>> {
 };
 
 template <> struct fmt::formatter<Constraint> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(Constraint const& constraint, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -126,9 +116,7 @@ template <> struct fmt::formatter<Constraint> {
 };
 
 template <> struct fmt::formatter<CSP> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(CSP const& csp, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -139,9 +127,7 @@ template <> struct fmt::formatter<CSP> {
 };
 
 template <> struct fmt::formatter<Literal> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(Literal const& literal, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -151,9 +137,7 @@ template <> struct fmt::formatter<Literal> {
 };
 
 template <> struct fmt::formatter<Clause> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(Clause const& clause, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -162,9 +146,7 @@ template <> struct fmt::formatter<Clause> {
 };
 
 template <> struct fmt::formatter<SAT> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(SAT const& sat, FormatContext& ctx) const -> decltype(ctx.out()) {
@@ -175,9 +157,7 @@ template <> struct fmt::formatter<SAT> {
 };
 
 template <> struct fmt::formatter<Satisfiability> {
-	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) {
-		return ctx.begin();
-	};
+	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
 	auto format(Satisfiability const& satisfiability, FormatContext& ctx) const
