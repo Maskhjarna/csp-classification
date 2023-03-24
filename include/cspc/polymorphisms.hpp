@@ -17,6 +17,7 @@ extern auto neq_constraint(std::vector<size_t> const& variables, size_t domain_s
 extern auto eq_constraint(std::vector<size_t> const& variables, size_t domain_size) -> Constraint;
 extern auto unary_relation(RuntimeArray<size_t> const& row) -> Relation;
 extern auto all_binary_relations(size_t domain_size) -> std::optional<std::vector<Relation>>;
+extern auto all_tetriary_relations(size_t domain_size) -> std::optional<std::vector<Relation>>;
 extern auto majority_operation(size_t arity, size_t domain_size) -> Operation;
 extern auto siggers_operation(size_t domain_size) -> Operation;
 extern auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP;

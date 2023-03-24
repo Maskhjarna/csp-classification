@@ -12,3 +12,11 @@ endfunction()
 add_cspc_example(
 	siggers_all_binary_on_domain_3
 	"siggers_all_binary_on_domain_3.cpp")
+
+add_cspc_example(
+	siggers_all_binary_on_domain_4
+	"siggers_all_binary_on_domain_4.cpp")
+
+add_cspc_example(
+	siggers_all_tetriary_on_domain_3
+	"siggers_all_tetriary_on_domain_3.cpp")

@@ -132,13 +132,11 @@ auto all_binary_relations(size_t domain_size) -> std::optional<std::vector<Relat
 	// all binary tuples of elements in the domain
 	auto all_tuples = std::vector<RuntimeArray<size_t>>();
 	all_tuples.reserve(domain_size * domain_size);
-	// clang-format off
-	std::ranges::for_each(domain, [&](size_t l){
-		std::ranges::for_each(domain, [&](size_t r){
+	std::ranges::for_each(domain, [&](size_t l) {
+		std::ranges::for_each(domain, [&](size_t r) {
 			all_tuples.push_back(RuntimeArray{{l, r}});
 		});
 	});
-	// clang-format on
 
 	// tuples (a, b) where a != b
 	auto tuples = std::vector<RuntimeArray<size_t>>();
@@ -153,6 +151,56 @@ auto all_binary_relations(size_t domain_size) -> std::optional<std::vector<Relat
 	result.reserve(n_elements);
 	for (auto bitmask = 1u; bitmask <= n_elements; ++bitmask) {
 		auto rel = Relation(2);
+		for (auto j = 0u; j < tuples.size(); ++j) {
+			if (bitmask & (u64(1) << j)) {
+				rel.add_entry(tuples[j]);
+			}
+		}
+		result.push_back(rel);
+	}
+	std::sort(result.begin(), result.end(), [](Relation const& lhs, Relation const& rhs) {
+		return lhs.size() <= rhs.size();
+	});
+	return result;
+}
+
+auto all_tetriary_relations(size_t domain_size) -> std::optional<std::vector<Relation>> {
+	if (domain_size > 64) {
+		spdlog::error("Infeasible domain size (> 64)");
+		return std::nullopt;
+	}
+
+	// vector of all elements in domain
+	auto domain = std::vector<size_t>{};
+	domain.resize(domain_size);
+	std::iota(domain.begin(), domain.end(), 0);
+
+	// all binary tuples of elements in the domain
+	auto all_tuples = std::vector<RuntimeArray<size_t>>();
+	all_tuples.reserve(domain_size * domain_size);
+	std::ranges::for_each(domain, [&](size_t x) {
+		std::ranges::for_each(domain, [&](size_t y) {
+			std::ranges::for_each(domain, [&](size_t z) {
+				all_tuples.push_back(RuntimeArray{{x, y, z}});
+			});
+		});
+	});
+
+	// tuples (a, b, c) where a != b or a != c or b != c
+	auto tuples = std::vector<RuntimeArray<size_t>>();
+	tuples.reserve(domain_size * domain_size - domain_size);
+	std::copy_if(
+		all_tuples.begin(), all_tuples.end(), std::back_inserter(tuples),
+		[](RuntimeArray<size_t> const& tuple) {
+			return tuple[0] != tuple[1] || tuple[0] != tuple[2] || tuple[1] != tuple[2];
+		});
+
+	// all subsets of tuples, bar the empty set
+	const auto n_elements = std::pow(2, tuples.size()) - 1;
+	auto result = std::vector<Relation>{};
+	result.reserve(n_elements);
+	for (auto bitmask = 1u; bitmask <= n_elements; ++bitmask) {
+		auto rel = Relation(3);
 		for (auto j = 0u; j < tuples.size(); ++j) {
 			if (bitmask & (u64(1) << j)) {
 				rel.add_entry(tuples[j]);
