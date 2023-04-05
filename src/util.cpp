@@ -35,4 +35,11 @@ auto call(std::string const& command, std::string const& input) -> std::optional
 	}
 	return result;
 }
+
+auto repeat(size_t n, std::function<void(void)> fn) -> void {
+	while (n--) {
+		fn();
+	}
+}
+
 } // namespace util

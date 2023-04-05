@@ -32,51 +32,59 @@ enum Satisfiability {
 
 template <typename T> class RuntimeArray {
   public:
-	RuntimeArray(std::initializer_list<T> ts) : length{ts.size()}, m_data(std::move(ts)) {}
-	RuntimeArray(size_t length) : length{length}, m_data{std::vector<T>(length)} {}
-	auto operator[](size_t i) -> T& { return m_data.at(i); }
-	auto operator[](size_t i) const -> T const& { return m_data.at(i); }
-	auto operator==(RuntimeArray const& other) const -> bool {
-		return length == other.length && std::ranges::equal(*this, other);
-	}
-	auto check() const -> void {
-		spdlog::info(length);
-		spdlog::info(m_data.size());
-		assert(length == m_data.size());
-		assert(length > 0);
-	}
-	constexpr auto begin() { return m_data.begin(); }
-	constexpr auto end() { return m_data.end(); }
-	constexpr auto begin() const { return m_data.begin(); }
-	constexpr auto end() const { return m_data.end(); }
-	auto size() const { return m_data.size(); }
-	auto data() const -> std::vector<T> const& { return m_data; }
+	RuntimeArray(std::initializer_list<T> data) : m_data{std::move(data)}, m_length{data.size()} {}
+	RuntimeArray(size_t length) : m_data(length), m_length{length} {}
 
-	const size_t length;
+	auto length() const -> size_t { return m_length; }
+	auto begin() { return m_data.begin(); }
+	auto end() { return m_data.end(); }
+	auto begin() const { return m_data.begin(); }
+	auto end() const { return m_data.end(); }
+	auto reserve(size_t n) { m_data.reserve(n); }
+	auto size() const { return m_data.size(); }
+	auto operator[](size_t i) -> T& { return m_data[i]; };
+	auto operator[](size_t i) const -> T const& { return m_data[i]; };
+	auto operator*() const -> T& { *this; };
+	auto operator==(RuntimeArray const& other) const -> bool {
+		return m_length == other.m_length && m_data == other.m_data;
+	}
 
   private:
-	std::vector<T> m_data{};
+	std::vector<T> m_data;
+	size_t m_length;
 };
 
 class Relation {
   public:
-	Relation(size_t arity, std::initializer_list<RuntimeArray<size_t>> data)
-		: m_arity{arity}, m_data{std::move(data)} {}
-	Relation(size_t arity) : m_arity{arity} {}
-	auto operator[](size_t i) -> RuntimeArray<size_t>& { return m_data.at(i); }
-	auto operator[](size_t i) const -> RuntimeArray<size_t> const& { return m_data.at(i); }
-	constexpr auto begin() { return m_data.begin(); }
-	constexpr auto end() { return m_data.end(); }
-	constexpr auto begin() const { return m_data.begin(); }
-	constexpr auto end() const { return m_data.end(); }
-	auto reserve(size_t s) -> void { m_data.reserve(s); }
-	auto size() const -> size_t { return m_data.size(); }
-	auto add_entry(RuntimeArray<size_t> entry) -> void { m_data.push_back(std::move(entry)); }
+	Relation() : m_arity{0} {}
+	Relation(std::initializer_list<RuntimeArray<size_t>> data)
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(data, {}, &RuntimeArray<size_t>::size).size()} {}
+	Relation(std::vector<RuntimeArray<size_t>> data)
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(data, {}, &RuntimeArray<size_t>::size).size()} {}
+
 	auto arity() const -> size_t { return m_arity; }
+	auto begin() { return m_data.begin(); }
+	auto end() { return m_data.end(); }
+	auto begin() const { return m_data.begin(); }
+	auto end() const { return m_data.end(); }
+	auto insert(std::vector<RuntimeArray<size_t>>::const_iterator it, RuntimeArray<size_t> val) {
+		m_data.insert(it, std::move(val));
+	}
+	auto reserve(size_t n) { m_data.reserve(n); }
+	auto size() const { return m_data.size(); }
+	auto erase(RuntimeArray<size_t> const& value) {
+		// TODO: Relation would probably be better represented by an unordered_set, but there is no
+		// stdlib hash function for vectors
+		m_data.erase(std::ranges::find(m_data, value));
+	}
+	auto operator[](size_t i) -> RuntimeArray<size_t>& { return m_data[i]; };
+	auto operator[](size_t i) const -> RuntimeArray<size_t> const& { return m_data[i]; };
 
   private:
+	std::vector<RuntimeArray<size_t>> m_data;
 	size_t m_arity;
-	std::vector<RuntimeArray<size_t>> m_data{};
 };
 
 struct Identity {
@@ -84,13 +92,10 @@ struct Identity {
 	const std::vector<std::vector<size_t>> elements{};
 };
 
-struct Operation : RuntimeArray<std::optional<size_t>> {
-	Operation(size_t arity, size_t domain_size, std::initializer_list<Identity> identities)
-		: RuntimeArray<std::optional<size_t>>((size_t)std::pow(domain_size, arity)), arity{arity},
-		  domain_size{domain_size}, identities{std::move(identities)} {}
-	// TODO calculate from identities and values
+struct Operation {
+	Operation(size_t arity, std::initializer_list<Identity> identities)
+		: arity{arity}, identities{std::move(identities)} {}
 	const size_t arity;
-	const size_t domain_size;
 	const std::vector<Identity> identities;
 };
 

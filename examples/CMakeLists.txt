@@ -5,7 +5,7 @@ target_link_libraries(cspc_example_base INTERFACE
 	libcspc)
 
 function(add_cspc_example name files)
-	add_executable(cspc_example_${name} ${files})
+	add_executable(cspc_example_${name} ${files} "common.cpp")
 	target_link_libraries(cspc_example_${name} PRIVATE cspc_example_base)
 endfunction()
 

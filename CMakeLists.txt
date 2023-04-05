@@ -30,6 +30,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wall
   -Wextra
   -Wpedantic
+  -fconcepts-diagnostics-depth=4
   $<$<CONFIG:Debug>:-g>
   $<$<CONFIG:Release>:-O3>)
 include_directories(${PROJECT_NAME} 

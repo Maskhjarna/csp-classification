@@ -2,8 +2,11 @@
 
 #include "data_structures.hpp"
 #include "types.hpp"
+#include <bits/iterator_concepts.h>
+#include <bits/ranges_base.h>
 #include <fmt/format.h>
 #include <functional>
+#include <iterator>
 #include <ranges>
 #include <vector>
 
@@ -12,6 +15,7 @@ extern constexpr auto comptime_pow(u64 base, u64 exponent) -> u64;
 extern auto n_choose_k(u64 n, u64 k) -> u64;
 extern auto call(std::string const& command, std::string const& input = "")
 	-> std::optional<std::string>;
+extern auto repeat(size_t n, std::function<void(void)> fn) -> void;
 
 template <typename T>
 extern auto try_unwrap(std::vector<std::optional<T>> const& v) -> std::optional<std::vector<T>> {
@@ -62,6 +66,33 @@ auto lift_optional(std::function<U(T)> fn) -> std::function<std::optional<U>(std
 		return std::nullopt;
 	};
 }
+
+template <typename T, typename U, typename V>
+concept HasInsert = requires(T t, U u, V v) { t.insert(u, v); };
+
+template <std::ranges::input_range Range, std::input_or_output_iterator OutputIterator>
+	requires std::default_initializable<std::iter_value_t<OutputIterator>> &&
+			 std::constructible_from<
+				 std::iter_value_t<OutputIterator>,
+				 std::initializer_list<std::ranges::range_value_t<Range>>> &&
+			 HasInsert<
+				 std::iter_value_t<OutputIterator>,
+				 std::ranges::iterator_t<std::iter_value_t<OutputIterator>>,
+				 std::ranges::range_value_t<Range>>
+			 auto all_subsets(Range r, OutputIterator begin) -> OutputIterator {
+	if (r.begin() + 1 == r.end()) {
+		*begin = std::iter_value_t<OutputIterator>{};
+		return begin + 1;
+	}
+	const auto end = all_subsets(Range{r.begin() + 1, r.end()}, begin);
+	auto new_end = end;
+	std::for_each(begin, end, [&](std::iter_value_t<OutputIterator> container) {
+		container.insert(container.end(), *r.begin());
+		*new_end++ = std::iter_value_t<OutputIterator>{container};
+	});
+	return new_end;
+
+} // namespace util
 
 } // namespace util
 

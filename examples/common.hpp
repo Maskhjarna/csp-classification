@@ -41,3 +41,5 @@ auto transform_and_print_progress(Range&& range, OutputIterator result, Function
 
 	return {input, result};
 }
+
+extern auto siggers_all_nary_on_domain(size_t n, size_t domain_size) -> void;

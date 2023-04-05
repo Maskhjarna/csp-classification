@@ -10,19 +10,6 @@
 
 namespace poly {
 
-// namespace {
-
-// auto increment_unique_in_domain(RuntimeArray<size_t>& tuple, size_t domain_size) -> void {
-// 	for (auto i = 0u; i < tuple.length; ++i) {
-// 		if (++tuple[i] < domain_size - i) {
-// 			for (auto j = 0u; j < i; ++j) {
-// 				tuple[i - j - 1] = tuple[i - j] + 1;
-// 			}
-// 			break;
-// 		}
-// 	}
-// }
-
 auto increment_in_domain(RuntimeArray<size_t>& tuple, size_t domain_size) -> void {
 	for (auto& val : tuple) {
 		if (++val < domain_size) {
@@ -32,17 +19,22 @@ auto increment_in_domain(RuntimeArray<size_t>& tuple, size_t domain_size) -> voi
 	}
 }
 
+auto create_all_tuples(size_t arity, size_t domain_size) -> std::vector<RuntimeArray<size_t>> {
+	const auto n_tuples = std::pow(domain_size, arity);
+	auto result = std::vector<RuntimeArray<size_t>>{};
+	result.reserve(n_tuples);
+	auto current = RuntimeArray<size_t>(arity);
+	util::repeat(n_tuples, [&]() {
+		result.push_back(current);
+		increment_in_domain(current, domain_size);
+	});
+	return result;
+}
+
 auto inverse(Relation const& relation, size_t domain_size) -> Relation {
-	const auto max_elements_in_relation = std::pow(domain_size, relation.arity());
-	auto result = Relation(relation.arity());
-	result.reserve(max_elements_in_relation - relation.size());
-	auto entry = RuntimeArray<size_t>(relation.arity());
-	for (auto i = 0u; i < max_elements_in_relation; ++i) {
-		if (std::find(relation.begin(), relation.end(), entry) == relation.end()) {
-			result.add_entry(entry);
-		}
-		increment_in_domain(entry, domain_size);
-	}
+	auto result = Relation(create_all_tuples(relation.arity(), domain_size));
+	std::ranges::for_each(
+		relation, [&](RuntimeArray<size_t> const& entry) { result.erase(entry); });
 	return result;
 }
 
@@ -60,8 +52,8 @@ auto index_to_function_input(size_t index, size_t arity, size_t domain_size)
 auto function_input_to_index(RuntimeArray<size_t> const& input, size_t domain_size) -> size_t {
 	auto result = size_t{0};
 	auto multiplier = size_t{1};
-	for (auto i = 0u; i < input.length; ++i) {
-		result += input[input.length - 1 - i] * multiplier;
+	for (auto i = 0u; i < input.length(); ++i) {
+		result += input[input.length() - 1 - i] * multiplier;
 		multiplier *= domain_size;
 	}
 	return result;
@@ -83,8 +75,8 @@ auto apply_identity(
 }
 
 auto satisfies_identity(RuntimeArray<size_t> const& input, std::vector<size_t> id) -> bool {
-	for (auto i = 0u; i < input.length; ++i) {
-		for (auto j = i + 1; j < input.length; ++j) {
+	for (auto i = 0u; i < input.length(); ++i) {
+		for (auto j = i + 1; j < input.length(); ++j) {
 			if ((id[i] == id[j]) && (input[i] != input[j])) {
 				return false;
 			}
@@ -97,120 +89,47 @@ auto satisfies_identity(RuntimeArray<size_t> const& input, std::vector<size_t> i
 
 namespace factory {
 
-auto relation(
-	size_t arity,
-	size_t domain_size,
-	std::function<bool(std::vector<size_t>::const_iterator, std::vector<size_t>::const_iterator)>
-		fn) -> Relation {
-	auto result = Relation(arity);
+template <std::ranges::input_range Range>
+auto relation(size_t arity, size_t domain_size, std::function<bool(Range)> fn) -> Relation {
+	auto entries = std::vector<RuntimeArray<size_t>>{};
 	auto entry = RuntimeArray<size_t>(arity);
-	for (auto i = 0u; i < std::pow(domain_size, arity); ++i) {
-		if (fn(entry.begin(), entry.end())) {
-			result.add_entry(entry);
+	util::repeat(std::pow(domain_size, arity), [&]() {
+		if (fn(entry)) {
+			entries.push_back(entry); // TODO create domain iterator and use here
 		}
 		increment_in_domain(entry, domain_size);
-	}
-	return result;
+	});
+	return Relation(entries);
 }
 
 auto assignment_constraint(
 	std::vector<variable> const& variables, RuntimeArray<size_t> const& constants) -> Constraint {
-	return Constraint(Relation(variables.size(), {constants}), variables, IS);
+	return Constraint(Relation({constants}), variables, IS);
 }
 
-auto all_binary_relations(size_t domain_size) -> std::optional<std::vector<Relation>> {
+auto all_nary_relations(size_t n, size_t domain_size) -> std::optional<std::vector<Relation>> {
 	if (domain_size > 64) {
 		spdlog::error("Infeasible domain size (> 64)");
 		return std::nullopt;
 	}
+	const auto n_tuples = std::pow(domain_size, n);
 
-	// vector of all elements in domain
-	auto domain = std::vector<size_t>{};
-	domain.resize(domain_size);
-	std::iota(domain.begin(), domain.end(), 0);
+	// all tetriary tuples of elements in the domain
+	const auto all_tuples = create_all_tuples(n, domain_size);
 
-	// all binary tuples of elements in the domain
-	auto all_tuples = std::vector<RuntimeArray<size_t>>();
-	all_tuples.reserve(domain_size * domain_size);
-	std::ranges::for_each(domain, [&](size_t l) {
-		std::ranges::for_each(domain, [&](size_t r) {
-			all_tuples.push_back(RuntimeArray{{l, r}});
+	// tuples (a, b, c, ...) where a != b or a != c or ... or b != c or ...
+	auto tuples = std::vector<RuntimeArray<size_t>>{};
+	tuples.reserve(n_tuples - domain_size);
+	std::ranges::copy_if(
+		all_tuples, std::back_inserter(tuples), [](RuntimeArray<size_t> const& tuple) {
+			return std::ranges::adjacent_find(tuple, std::not_equal_to{}) != tuple.end();
 		});
-	});
 
-	// tuples (a, b) where a != b
-	auto tuples = std::vector<RuntimeArray<size_t>>();
-	tuples.reserve(domain_size * domain_size - domain_size);
-	std::copy_if(
-		all_tuples.begin(), all_tuples.end(), std::back_inserter(tuples),
-		[](RuntimeArray<size_t> const& tuple) { return tuple[0] != tuple[1]; });
-
-	// all subsets of tuples, bar the empty set
-	const auto n_elements = std::pow(2, tuples.size()) - 1;
 	auto result = std::vector<Relation>{};
-	result.reserve(n_elements);
-	for (auto bitmask = 1u; bitmask <= n_elements; ++bitmask) {
-		auto rel = Relation(2);
-		for (auto j = 0u; j < tuples.size(); ++j) {
-			if (bitmask & (u64(1) << j)) {
-				rel.add_entry(tuples[j]);
-			}
-		}
-		result.push_back(rel);
-	}
-	std::sort(result.begin(), result.end(), [](Relation const& lhs, Relation const& rhs) {
-		return lhs.size() <= rhs.size();
-	});
-	return result;
-}
+	result.reserve(std::pow(2, n_tuples));
+	util::all_subsets(tuples, result.begin());
 
-auto all_tetriary_relations(size_t domain_size) -> std::optional<std::vector<Relation>> {
-	if (domain_size > 64) {
-		spdlog::error("Infeasible domain size (> 64)");
-		return std::nullopt;
-	}
-
-	// vector of all elements in domain
-	auto domain = std::vector<size_t>{};
-	domain.resize(domain_size);
-	std::iota(domain.begin(), domain.end(), 0);
-
-	// all binary tuples of elements in the domain
-	auto all_tuples = std::vector<RuntimeArray<size_t>>();
-	all_tuples.reserve(domain_size * domain_size);
-	std::ranges::for_each(domain, [&](size_t x) {
-		std::ranges::for_each(domain, [&](size_t y) {
-			std::ranges::for_each(domain, [&](size_t z) {
-				all_tuples.push_back(RuntimeArray{{x, y, z}});
-			});
-		});
-	});
-
-	// tuples (a, b, c) where a != b or a != c or b != c
-	auto tuples = std::vector<RuntimeArray<size_t>>();
-	tuples.reserve(domain_size * domain_size - domain_size);
-	std::copy_if(
-		all_tuples.begin(), all_tuples.end(), std::back_inserter(tuples),
-		[](RuntimeArray<size_t> const& tuple) {
-			return tuple[0] != tuple[1] || tuple[0] != tuple[2] || tuple[1] != tuple[2];
-		});
-
-	// all subsets of tuples, bar the empty set
-	const auto n_elements = std::pow(2, tuples.size()) - 1;
-	auto result = std::vector<Relation>{};
-	result.reserve(n_elements);
-	for (auto bitmask = 1u; bitmask <= n_elements; ++bitmask) {
-		auto rel = Relation(3);
-		for (auto j = 0u; j < tuples.size(); ++j) {
-			if (bitmask & (u64(1) << j)) {
-				rel.add_entry(tuples[j]);
-			}
-		}
-		result.push_back(rel);
-	}
-	std::sort(result.begin(), result.end(), [](Relation const& lhs, Relation const& rhs) {
-		return lhs.size() <= rhs.size();
-	});
+	std::ranges::sort(result, {}, &Relation::size);
 	return result;
 }
 
@@ -234,29 +153,18 @@ auto eq_constraint(std::vector<size_t> const& variables, size_t domain_size) -> 
 		variables, EQ);
 }
 
-auto majority_operation(size_t arity, size_t domain_size) -> Operation {
-	auto result = Operation(arity, domain_size, {});
-	auto input = RuntimeArray<size_t>(arity);
-	for (auto i = 0u; i < std::pow(domain_size, arity); ++i) {
-		result[i] = std::count(input.begin(), input.end(), 1) > (u32)arity / 2;
-		increment_in_domain(input, domain_size);
-	}
-	return result;
-}
-
-auto siggers_operation(size_t domain_size) -> Operation {
-	return Operation(4, domain_size, {{{0, 1, 0, 2}, {1, 0, 2, 1}}});
-}
+auto siggers_operation() -> Operation { return Operation(4, {{{0, 1, 0, 2}, {1, 0, 2, 1}}}); }
 
 auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP {
 	auto constraints = std::vector<Constraint>{};
-	const auto domain_size = operation.domain_size;
+	const auto domain_size = input_csp.domain_size();
+	const auto function_table_entries = std::pow(domain_size, operation.arity);
 
 	// constraints produced by operation identites
 	for (auto const& identity : operation.identities) {
 		for (auto i = 0u; i < identity.elements.size(); ++i) {
 			for (auto j = i + 1; j < identity.elements.size(); ++j) {
-				for (auto k = 0u; k < operation.length; ++k) {
+				for (auto k = 0u; k < function_table_entries; ++k) {
 					const auto input = index_to_function_input(k, operation.arity, domain_size);
 					if (!satisfies_identity(input, identity.elements[i])) {
 						continue;
@@ -267,14 +175,6 @@ auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> C
 					constraints.push_back(eq_constraint({k, k_mirror}, domain_size));
 				}
 			}
-		}
-	}
-
-	// constraints from fixed operation values
-	for (auto i = 0u; i < operation.length; ++i) {
-		const auto maybe_val = operation[i];
-		if (maybe_val.has_value()) {
-			constraints.push_back(assignment_constraint({i}, {maybe_val.value()}));
 		}
 	}
 
@@ -439,8 +339,7 @@ auto multivalued_direct_encoding(CSP const& csp) -> SAT {
 	return SAT(std::move(clauses));
 }
 
-auto to_preserves_operation_csp(
-	size_t domain_size, Operation const& operation, Relation const& relation) -> CSP {
+auto to_preserves_operation_csp(Operation const& operation, Relation const& relation) -> CSP {
 	auto variables = std::vector<size_t>(relation.arity());
 	std::iota(variables.begin(), variables.end(), 0);
 	const auto input = CSP({Constraint(relation, variables)});
