@@ -2,7 +2,7 @@ project("cspc_examples")
 
 add_library(cspc_example_base INTERFACE)
 target_link_libraries(cspc_example_base INTERFACE
-	libcspc)
+	cspc)
 
 function(add_cspc_example name files)
 	add_executable(cspc_example_${name} ${files} "common.cpp")

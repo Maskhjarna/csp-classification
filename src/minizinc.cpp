@@ -1,8 +1,11 @@
-#include "minizinc.hpp"
-#include "util.hpp"
+#include "cspc/minizinc.hpp"
+
+#include "cspc/formatters.hpp"
 #include <filesystem>
 #include <fstream>
+#include <gautil/system.hpp>
 #include <numeric>
+#include <spdlog/spdlog.h>
 
 namespace solvers {
 auto csp_to_minizinc(CSP const& csp) -> std::optional<std::string> {
@@ -59,7 +62,8 @@ auto csp_to_minizinc(CSP const& csp) -> std::optional<std::string> {
 				return fmt::format("constraint ({});\n", fmt::join(result, " \\/ "));
 			}
 			}
-			assert(false); // malformed input
+			spdlog::critical("Malformed input encountered in minizinc.cpp");
+			exit(EXIT_FAILURE);
 		});
 	const auto result =
 		header +
@@ -102,7 +106,7 @@ auto solve_minizinc(CSP const& csp) -> std::optional<Satisfiability> {
 	const auto command =
 		fmt::format("cat {} | minizinc --solver gecode --input-from-stdin", maybe_path.value());
 
-	const auto maybe_minizinc_output = util::call(command);
+	const auto maybe_minizinc_output = gautil::call(command);
 	if (!maybe_minizinc_output.has_value()) {
 		spdlog::error("Failed executing MiniZinc");
 		return std::nullopt;

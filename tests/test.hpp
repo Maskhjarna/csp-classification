@@ -2,12 +2,8 @@
 
 #include <fmt/core.h>
 #include <functional>
+#include <gautil/overload.hpp>
 #include <variant>
-
-template <class... Ts> struct Overload : Ts... {
-	using Ts::operator()...;
-};
-template <class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
 struct TestSuccess {};
 struct TestFailure {

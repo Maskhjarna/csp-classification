@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 project(
-  "libcspc"
+  "cspc"
   VERSION 0.0
   LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,28 +18,26 @@ add_library(${PROJECT_NAME}
   "include/cspc/data_structures.hpp"
   "include/cspc/kissat.hpp"
   "include/cspc/minizinc.hpp"
-  "include/cspc/polymorphisms.hpp"
-  "include/cspc/types.hpp"
+  "include/cspc/algorithms.hpp"
 
   "src/minizinc.cpp"
   "src/kissat.cpp"
-  "src/polymorphisms.cpp"
-  "src/util.cpp")
+  "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wall
   -Wextra
   -Wpedantic
-  -fconcepts-diagnostics-depth=4
   $<$<CONFIG:Debug>:-g>
   $<$<CONFIG:Release>:-O3>)
-include_directories(${PROJECT_NAME} 
-  "include/cspc"
-  "src")
+target_include_directories(${PROJECT_NAME} PUBLIC
+  "include/"
+)
 target_link_libraries(${PROJECT_NAME} 
   fmt
   spdlog
   libkissat
+  gautil
   ${CMAKE_THREAD_LIBS_INIT}
 )
 

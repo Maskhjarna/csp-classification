@@ -1,23 +1,11 @@
-#include "util.hpp"
+#include "gautil/system.hpp"
 
-#include <functional>
-#include <ranges>
+#include <array>
+#include <memory>
+#include <spdlog/spdlog.h>
+#include <string.h>
 
-namespace util {
-constexpr auto comptime_pow(u64 base, u64 exponent) -> u64 {
-	if (exponent == 0) {
-		return 1;
-	}
-	return base * comptime_pow(base, exponent - 1);
-}
-
-auto n_choose_k(u64 n, u64 k) -> u64 {
-	if (k == 0) {
-		return 1;
-	}
-	return (n * n_choose_k(n - 1, k - 1)) / k;
-}
-
+namespace gautil {
 auto call(std::string const& command, std::string const& input) -> std::optional<std::string> {
 	const auto process =
 		std::unique_ptr<FILE, decltype(&pclose)>(popen(command.data(), "r"), pclose);
@@ -35,11 +23,4 @@ auto call(std::string const& command, std::string const& input) -> std::optional
 	}
 	return result;
 }
-
-auto repeat(size_t n, std::function<void(void)> fn) -> void {
-	while (n--) {
-		fn();
-	}
-}
-
-} // namespace util
+} // namespace gautil
