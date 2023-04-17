@@ -1,7 +1,9 @@
 #include "cspc/algorithms.hpp"
 
 #include "cspc/data_structures.hpp"
+#include "cspc/formatters.hpp"
 #include <fmt/core.h>
+#include <gautil/formatters.hpp>
 #include <gautil/functional.hpp>
 #include <gautil/math.hpp>
 #include <numeric>
@@ -108,9 +110,16 @@ auto all_nary_relations(size_t n, size_t domain_size) -> std::optional<std::vect
 		return std::ranges::adjacent_find(tuple, std::not_equal_to{}) != tuple.end();
 	});
 
+	//  all subsets of tuples, bar the empty set
+	auto subsets = gautil::all_subsets(tuples);
+	subsets.erase(subsets.begin());
+
+	// to relations
 	auto result = std::vector<Relation>{};
-	result.reserve(std::pow(2, n_tuples));
-	gautil::all_subsets(tuples, result.begin());
+	result.reserve(subsets.size());
+	std::ranges::transform(
+		subsets, std::back_inserter(result),
+		[&](std::vector<Relation::Entry> const& v) { return Relation(v); });
 
 	std::ranges::sort(result, {}, &Relation::size);
 	return result;

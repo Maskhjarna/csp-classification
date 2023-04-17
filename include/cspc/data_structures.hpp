@@ -57,21 +57,22 @@ class Relation {
   public:
 	using Entry = FixedSizeVector<DomainValue>;
 	Relation() : m_arity{0} {}
+	Relation(size_t arity) : m_arity{arity} {}
 	Relation(std::initializer_list<Entry> data)
-		: m_data{std::move(data)}, m_arity{std::ranges::min(data, {}, &Entry::size).size()} {}
+		: m_data{std::move(data)}, m_arity{std::ranges::min(m_data, {}, &Entry::size).size()} {}
 	Relation(std::vector<Entry> data)
-		: m_data{std::move(data)}, m_arity{std::ranges::min(data, {}, &Entry::size).size()} {}
+		: m_data{std::move(data)}, m_arity{std::ranges::min(m_data, {}, &Entry::size).size()} {}
 
 	auto arity() const -> size_t { return m_arity; }
-	auto begin() { return m_data.begin(); }
-	auto end() { return m_data.end(); }
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
 	auto insert(std::vector<Entry>::const_iterator it, Entry val) {
 		m_data.insert(it, std::move(val));
 	}
+	auto add_entry(Entry entry) -> void { m_data.push_back(entry); }
 	auto reserve(size_t n) { m_data.reserve(n); }
 	auto size() const { return m_data.size(); }
+	auto empty() const -> bool { return m_data.empty(); }
 	auto erase(Entry const& value) {
 		// TODO: Relation would probably be better represented by an unordered_set, but there is no
 		// stdlib hash function for vectors
@@ -127,6 +128,9 @@ class CSP {
 		: _n_variables{[&constraints]() {
 			  auto max_variable = Variable{0};
 			  for (auto const& constraint : constraints) {
+				  if (constraint.variables.empty()) {
+					  continue;
+				  }
 				  max_variable = std::max(max_variable, std::ranges::max(constraint.variables));
 			  }
 			  return max_variable + 1;
@@ -134,6 +138,9 @@ class CSP {
 		  _domain_size{[&constraints]() {
 			  auto max_domain_size = Variable{0};
 			  for (auto const& constraint : constraints) {
+				  if (constraint.relation.empty()) {
+					  continue;
+				  }
 				  for (auto const& entry : constraint.relation) {
 					  max_domain_size = std::max(max_domain_size, std::ranges::max(entry));
 				  }

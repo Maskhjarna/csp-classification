@@ -37,7 +37,7 @@ auto transform_and_print_progress(Range&& range, OutputIterator result, Function
 			"[{}{}] {:.2f}%", std::string(filled * PROGRESS_BAR_LENGTH, '='),
 			std::string(unfilled * PROGRESS_BAR_LENGTH, ' '), filled * 100.0);
 	}
-	carriage_return_logger.info("[{}]", std::string(PROGRESS_BAR_LENGTH, '='));
+	carriage_return_logger.info("[{}] 100.00%\n", std::string(PROGRESS_BAR_LENGTH, '='));
 
 	return {input, result};
 }

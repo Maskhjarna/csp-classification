@@ -10,6 +10,8 @@ auto siggers_all_nary_on_domain(size_t n, size_t domain_size) -> void {
 	spdlog::info("Setting up relations...");
 	const auto relations = cspc::all_nary_relations(n, domain_size).value();
 	auto csps = std::vector<std::optional<CSP>>(relations.size());
+
+	spdlog::info("Setting up Meta-CSP...");
 	transform_and_print_progress(relations, csps.begin(), [&](Relation const& relation) {
 		return cspc::to_preserves_operation_csp(siggers, relation);
 	});
