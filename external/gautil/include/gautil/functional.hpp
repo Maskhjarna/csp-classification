@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <bits/iterator_concepts.h>
 #include <functional>
+#include <numeric>
 #include <optional>
 #include <spdlog/spdlog.h>
 #include <vector>
@@ -114,4 +115,5 @@ auto transform_and_print_progress(Range&& range, OutputIterator result, Function
 
 	return {input, result};
 }
+
 } // namespace gautil

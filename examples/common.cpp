@@ -1,3 +1,4 @@
+#include "gautil/functional.hpp"
 #include <chrono>
 #include <cspc/algorithms.hpp>
 #include <cspc/kissat.hpp>
@@ -8,7 +9,8 @@ auto duration_to_precise_ms(auto duration) -> double {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() / std::pow(10, 6);
 }
 
-auto siggers_all_nary_on_domain(size_t n, size_t domain_size) -> void {
+auto siggers_all_nary_on_domain_parallell(
+	size_t n, size_t domain_size, std::function<SAT(CSP)> encoding) -> void {
 	const auto siggers = cspc::siggers_operation();
 
 	// start timer
@@ -29,7 +31,7 @@ auto siggers_all_nary_on_domain(size_t n, size_t domain_size) -> void {
 	// convert to SAT instances
 	auto sats = std::vector<SAT>{};
 	sats.reserve(csps.size());
-	std::ranges::transform(csps, std::back_inserter(sats), cspc::multivalued_direct_encoding);
+	std::ranges::transform(csps, std::back_inserter(sats), encoding);
 	const auto time_sats_done = std::chrono::system_clock::now();
 
 	// solve SAT instances
@@ -64,6 +66,55 @@ auto siggers_all_nary_on_domain(size_t n, size_t domain_size) -> void {
 	spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing Meta-CSPs", time_elapsed_csps_ms);
 	spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing SATs", time_elapsed_sats_ms);
 	spdlog::info("{:<30} │ {:>10.2f}ms", "Solving SATs", time_elapsed_solve_ms);
+	spdlog::info("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┼┄┄┄┄┄┄┄┄┄┄┄┄┄");
+	spdlog::info("{:<30} │ {:>10.2f}ms", "Total", time_elapsed_total_ms);
+}
+
+auto siggers_all_nary_on_domain_sequential(
+	size_t n, size_t domain_size, std::function<SAT(CSP)> encoding) -> void {
+	const auto siggers = cspc::siggers_operation();
+
+	// start timer
+	const auto time_before = std::chrono::system_clock::now();
+
+	// set up relations
+	const auto relations = cspc::all_nary_relations(n, domain_size).value();
+	const auto time_relations_done = std::chrono::system_clock::now();
+
+	// create Meta-CSPs, convert to SAT instances, and solve
+	auto satisfiability = std::vector<Satisfiability>{};
+	satisfiability.reserve(relations.size());
+	gautil::transform_and_print_progress(
+		relations, std::back_inserter(satisfiability), [&](Relation const& relation) {
+			const auto csp = cspc::to_preserves_operation_csp(siggers, relation);
+			const auto sat = encoding(csp);
+			return solvers::solve_kissat(sat);
+		});
+	const auto time_solved_done = std::chrono::system_clock::now();
+
+	// calculate durations
+	const auto time_elapsed_relations_ms =
+		duration_to_precise_ms(time_relations_done - time_before);
+	const auto time_elapsed_solve_ms =
+		duration_to_precise_ms(time_solved_done - time_relations_done);
+	const auto time_elapsed_total_ms = duration_to_precise_ms(time_solved_done - time_before);
+
+	// print results
+	spdlog::info("Results:");
+	spdlog::info("{:<10} │ {}", "Class", "Relation");
+	spdlog::info("───────────┼─────────");
+	std::ranges::for_each(std::views::iota(0u, satisfiability.size()), [&](size_t i) {
+		const auto label = satisfiability[i] == SATISFIABLE ? "P" : "NP-hard";
+		spdlog::info("{:<10} │ {}", label, relations[i]);
+	});
+
+	// print time profile
+	spdlog::info("");
+	spdlog::info("Time profile:");
+	spdlog::info("{:<30} │ {}", "Task", "Time");
+	spdlog::info("───────────────────────────────┼─────────────");
+	spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing relations", time_elapsed_relations_ms);
+	spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing and solving SATs", time_elapsed_solve_ms);
 	spdlog::info("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┼┄┄┄┄┄┄┄┄┄┄┄┄┄");
 	spdlog::info("{:<30} │ {:>10.2f}ms", "Total", time_elapsed_total_ms);
 }

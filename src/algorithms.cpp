@@ -9,7 +9,6 @@
 #include <numeric>
 #include <ranges>
 #include <spdlog/spdlog.h>
-#include <unordered_map>
 
 namespace cspc {
 namespace __internal {
@@ -34,10 +33,22 @@ auto create_all_tuples(size_t arity, size_t domain_size) -> std::vector<Relation
 	return result;
 }
 
-auto inverse(Relation const& relation, size_t domain_size) -> Relation {
-	auto result = Relation(create_all_tuples(relation.arity(), domain_size));
-	std::ranges::for_each(relation, [&](Relation::Entry const& entry) { result.erase(entry); });
-	return result;
+auto inverse(Constraint const& constraint, size_t domain_size) -> Constraint {
+	auto inverse_relation = Relation(create_all_tuples(constraint.relation.arity(), domain_size));
+	std::ranges::for_each(
+		constraint.relation, [&](Relation::Entry const& entry) { inverse_relation.erase(entry); });
+	// TODO infer tag here
+	return Constraint(std::move(inverse_relation), constraint.variables);
+}
+
+auto nogoods(std::vector<Constraint> const& constraints, size_t domain_size)
+	-> std::vector<Constraint> {
+	auto nogoods = std::vector<Constraint>{};
+	nogoods.reserve(constraints.size());
+	std::ranges::transform(
+		constraints, std::back_inserter(nogoods),
+		[&](Constraint const& constraint) { return __internal::inverse(constraint, domain_size); });
+	return nogoods;
 }
 
 auto index_to_function_input(DomainValue index, size_t arity, size_t domain_size)
@@ -199,7 +210,7 @@ auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> C
 	return CSP(std::move(constraints));
 }
 
-auto support_encoding(CSP const& csp) -> SAT {
+auto label_cover_encoding(CSP const& csp) -> SAT {
 	const auto n_constraints = csp.constraints().size();
 	const auto n_csp_vars = csp.n_variables() * csp.domain_size();
 
@@ -291,28 +302,28 @@ auto support_encoding(CSP const& csp) -> SAT {
 auto multivalued_direct_encoding(CSP const& csp) -> SAT {
 	const auto n_constraints = csp.constraints().size();
 
-	auto nogoods = std::vector<Relation>();
+	auto nogoods = std::vector<Constraint>();
 	nogoods.reserve(n_constraints);
 	std::ranges::transform(
 		csp.constraints(), std::back_inserter(nogoods), [&](Constraint const& constraint) {
-			return __internal::inverse(constraint.relation, csp.domain_size());
+			return __internal::inverse(constraint, csp.domain_size());
 		});
 
 	auto n_clauses = 0u;
 	for (auto i = 0u; i < n_constraints; ++i) {
-		n_clauses += csp.constraints()[i].relation.arity() + nogoods[i].size();
+		n_clauses += csp.constraints()[i].relation.arity() + nogoods[i].relation.size();
 	}
 
 	auto clauses = std::vector<Clause>(n_clauses);
 	for (auto i = 0u, offset = 0u; i < n_constraints; ++i) {
-		const auto n_nogoods = nogoods[i].size();
+		const auto n_nogoods = nogoods[i].relation.size();
 		const auto n_goods = csp.constraints()[i].relation.size();
 		const auto arity = csp.constraints()[i].relation.arity();
 		for (auto j = 0u; j < n_nogoods; ++j) {
 			clauses[offset].reserve(arity);
 			for (auto k = 0u; k < arity; ++k) {
-				const auto xk_eq_nogoodjk =
-					csp.constraints()[i].variables[k] * csp.domain_size() + nogoods[i][j][k];
+				const auto xk_eq_nogoodjk = csp.constraints()[i].variables[k] * csp.domain_size() +
+											nogoods[i].relation[j][k];
 				clauses[offset].push_back(Literal(xk_eq_nogoodjk, NEGATED));
 			}
 			offset += 1;

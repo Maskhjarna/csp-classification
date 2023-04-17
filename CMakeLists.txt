@@ -19,9 +19,11 @@ add_library(${PROJECT_NAME}
   "include/cspc/kissat.hpp"
   "include/cspc/minizinc.hpp"
   "include/cspc/algorithms.hpp"
+  "include/cspc/encodings/binary.hpp"
 
   "src/minizinc.cpp"
   "src/kissat.cpp"
+  "src/encodings/binary.cpp"
   "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${PROJECT_NAME} PRIVATE
