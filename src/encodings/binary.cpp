@@ -62,11 +62,8 @@ auto log_encoding(CSP const& csp) -> SAT {
 		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
 	const auto nogoods = __internal::nogoods(csp.constraints(), csp.domain_size());
 	const auto inclusive_domain_size = std::pow(2, n_bits);
-	const auto n_clauses =
-		std::transform_reduce(
-			nogoods.begin(), nogoods.end(), 0, std::plus{},
-			[](Constraint const& constraint) { return constraint.relation.size(); }) +
-		n_bits * csp.n_variables() * (inclusive_domain_size - csp.domain_size());
+	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &Constraint::relation_size) +
+						   n_bits * csp.n_variables() * (inclusive_domain_size - csp.domain_size());
 
 	auto clauses = std::vector<Clause>{};
 	clauses.reserve(n_clauses);

@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(CSPC_BUILD_TESTS "Build tests" ON)
 option(CSPC_BUILD_EXAMPLES "Build examples" ON)
+option(CSPC_BUILD_PROFILER "Build profiler" ON)
 
 add_subdirectory(external)
 find_package(fmt REQUIRED)
@@ -20,10 +21,12 @@ add_library(${PROJECT_NAME}
   "include/cspc/minizinc.hpp"
   "include/cspc/algorithms.hpp"
   "include/cspc/encodings/binary.hpp"
+  "include/cspc/encodings/direct.hpp"
 
   "src/minizinc.cpp"
   "src/kissat.cpp"
   "src/encodings/binary.cpp"
+  "src/encodings/direct.cpp"
   "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${PROJECT_NAME} PRIVATE
@@ -49,4 +52,8 @@ endif()
 
 if (CSPC_BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if (CSPC_BUILD_PROFILER)
+  add_subdirectory(profiler)
 endif()

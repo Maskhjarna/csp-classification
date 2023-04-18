@@ -104,11 +104,7 @@ auto unary_relation(std::vector<Variable> const& variables, Relation::Entry cons
 	return Constraint(Relation({row}), variables, IS);
 }
 
-auto all_nary_relations(size_t n, size_t domain_size) -> std::optional<std::vector<Relation>> {
-	if (domain_size > 64) {
-		spdlog::error("Infeasible domain size (> 64)");
-		return std::nullopt;
-	}
+auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation> {
 	const auto n_tuples = std::pow(domain_size, n);
 
 	// all tetriary tuples of elements in the domain
@@ -295,48 +291,6 @@ auto label_cover_encoding(CSP const& csp) -> SAT {
 			}
 		}
 		variable_offset += n_entries;
-	}
-	return SAT(std::move(clauses));
-}
-
-auto multivalued_direct_encoding(CSP const& csp) -> SAT {
-	const auto n_constraints = csp.constraints().size();
-
-	auto nogoods = std::vector<Constraint>();
-	nogoods.reserve(n_constraints);
-	std::ranges::transform(
-		csp.constraints(), std::back_inserter(nogoods), [&](Constraint const& constraint) {
-			return __internal::inverse(constraint, csp.domain_size());
-		});
-
-	auto n_clauses = 0u;
-	for (auto i = 0u; i < n_constraints; ++i) {
-		n_clauses += csp.constraints()[i].relation.arity() + nogoods[i].relation.size();
-	}
-
-	auto clauses = std::vector<Clause>(n_clauses);
-	for (auto i = 0u, offset = 0u; i < n_constraints; ++i) {
-		const auto n_nogoods = nogoods[i].relation.size();
-		const auto n_goods = csp.constraints()[i].relation.size();
-		const auto arity = csp.constraints()[i].relation.arity();
-		for (auto j = 0u; j < n_nogoods; ++j) {
-			clauses[offset].reserve(arity);
-			for (auto k = 0u; k < arity; ++k) {
-				const auto xk_eq_nogoodjk = csp.constraints()[i].variables[k] * csp.domain_size() +
-											nogoods[i].relation[j][k];
-				clauses[offset].push_back(Literal(xk_eq_nogoodjk, NEGATED));
-			}
-			offset += 1;
-		}
-		for (auto j = 0u; j < arity; ++j) {
-			clauses[offset].reserve(n_goods);
-			for (auto k = 0u; k < n_goods; ++k) {
-				const auto xj_eq_relkj = csp.constraints()[i].variables[j] * csp.domain_size() +
-										 csp.constraints()[i].relation[k][j];
-				clauses[offset].push_back(Literal(xj_eq_relkj, REGULAR));
-			}
-			offset += 1;
-		}
 	}
 	return SAT(std::move(clauses));
 }

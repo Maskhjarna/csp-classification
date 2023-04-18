@@ -37,11 +37,9 @@ extern auto neq_constraint(std::vector<Variable> const& variables, size_t domain
 extern auto eq_constraint(std::vector<Variable> const& variables, size_t domain_size) -> Constraint;
 extern auto unary_relation(std::vector<Variable> const& variables, Relation::Entry const& row)
 	-> Constraint;
-extern auto all_nary_relations(size_t n, size_t domain_size)
-	-> std::optional<std::vector<Relation>>;
+extern auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation>;
 extern auto siggers_operation() -> Operation;
 extern auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP;
 extern auto label_cover_encoding(CSP const& csp) -> SAT;
-extern auto multivalued_direct_encoding(CSP const& csp) -> SAT;
 extern auto to_preserves_operation_csp(Operation const& operation, Relation const& relation) -> CSP;
 } // namespace cspc

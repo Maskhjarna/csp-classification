@@ -116,6 +116,8 @@ class Constraint {
 	Constraint(
 		Relation const& relation, std::vector<Variable> const& variables, ConstraintTag tag = OTHER)
 		: relation{relation}, variables{variables}, tag{tag} {}
+	auto relation_size() const -> size_t { return relation.size(); }
+	auto arity() const -> size_t { return variables.size(); }
 
 	const Relation relation;
 	const std::vector<Variable> variables;

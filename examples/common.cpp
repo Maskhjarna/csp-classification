@@ -5,7 +5,7 @@
 #include <ranges>
 #include <spdlog/spdlog.h>
 
-auto duration_to_precise_ms(auto duration) -> double {
+auto duration_to_precise_ms(auto duration) -> f64 {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() / std::pow(10, 6);
 }
 
@@ -17,7 +17,7 @@ auto siggers_all_nary_on_domain_parallell(
 	const auto time_before = std::chrono::system_clock::now();
 
 	// set up relations
-	const auto relations = cspc::all_nary_relations(n, domain_size).value();
+	const auto relations = cspc::all_nary_relations(n, domain_size);
 	const auto time_relations_done = std::chrono::system_clock::now();
 
 	// create meta-CSP
@@ -78,7 +78,7 @@ auto siggers_all_nary_on_domain_sequential(
 	const auto time_before = std::chrono::system_clock::now();
 
 	// set up relations
-	const auto relations = cspc::all_nary_relations(n, domain_size).value();
+	const auto relations = cspc::all_nary_relations(n, domain_size);
 	const auto time_relations_done = std::chrono::system_clock::now();
 
 	// create Meta-CSPs, convert to SAT instances, and solve

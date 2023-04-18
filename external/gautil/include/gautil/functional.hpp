@@ -116,4 +116,16 @@ auto transform_and_print_progress(Range&& range, OutputIterator result, Function
 	return {input, result};
 }
 
+template <
+	typename T,
+	std::ranges::input_range Range,
+	std::copy_constructible BinaryOperator,
+	typename Proj = std::identity>
+auto fold(Range&& r, T initial, BinaryOperator op, Proj proj) -> T {
+	for (auto const& val : r) {
+		initial = std::invoke(op, initial, std::invoke(proj, val));
+	}
+	return initial;
+}
+
 } // namespace gautil
