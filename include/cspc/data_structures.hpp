@@ -30,6 +30,8 @@ enum Satisfiability {
 
 template <typename T> class FixedSizeVector {
   public:
+	FixedSizeVector(FixedSizeVector const& other) = default;
+	FixedSizeVector(FixedSizeVector&& other) = default;
 	FixedSizeVector(std::initializer_list<T> data)
 		: m_data{std::move(data)}, m_length{data.size()} {}
 	FixedSizeVector(size_t length) : m_data(length), m_length{length} {}
@@ -39,13 +41,37 @@ template <typename T> class FixedSizeVector {
 	auto end() { return m_data.end(); }
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
-	auto reserve(size_t n) { m_data.reserve(n); }
 	auto size() const { return m_data.size(); }
 	auto operator[](size_t i) -> T& { return m_data[i]; };
 	auto operator[](size_t i) const -> T const& { return m_data[i]; };
-	auto operator*() const -> T& { *this; };
+	auto operator=(FixedSizeVector const& other) -> FixedSizeVector<T>& = default;
+	auto operator=(FixedSizeVector&& other) -> FixedSizeVector<T>& = default;
 	auto operator==(FixedSizeVector const& other) const -> bool {
 		return m_length == other.m_length && m_data == other.m_data;
+	}
+	auto operator<(FixedSizeVector const& other) const -> bool {
+		if (m_length < other.m_length) {
+			return true;
+		}
+		if (m_length > other.m_length) {
+			return false;
+		}
+		for (auto i = 0u; i < other.size(); ++i) {
+			if (m_data[i] == other.m_data[i]) {
+				continue;
+			}
+			return m_data[i] < other.m_data[i];
+		}
+		return false;
+	}
+	auto operator>(FixedSizeVector const& other) const -> bool {
+		return !(this == other) && !(this < other);
+	}
+	auto operator>=(FixedSizeVector const& other) const -> bool {
+		return (this == other) || (this > other);
+	}
+	auto operator<=(FixedSizeVector const& other) const -> bool {
+		return (this == other) || (this < other);
 	}
 
   private:
@@ -66,6 +92,7 @@ class Relation {
 	auto arity() const -> size_t { return m_arity; }
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
+	auto data() const { return m_data; }
 	auto insert(std::vector<Entry>::const_iterator it, Entry val) {
 		m_data.insert(it, std::move(val));
 	}
@@ -74,7 +101,7 @@ class Relation {
 	auto size() const { return m_data.size(); }
 	auto empty() const -> bool { return m_data.empty(); }
 	auto erase(Entry const& value) {
-		// TODO: Relation would probably be better represented by an unordered_set, but there is no
+		// NOTE: Relation would probably be better represented by an unordered_set, but there is no
 		// stdlib hash function for vectors
 		m_data.erase(std::ranges::find(m_data, value));
 	}

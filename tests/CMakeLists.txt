@@ -4,6 +4,7 @@ project("cspc_tests")
 add_executable(cspc_tests
   "main.cpp"
   "test.cpp"
+  "test_encodings.cpp"
   "test_kissat.cpp"
   "test_polymorphisms.cpp"
 )

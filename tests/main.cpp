@@ -1,3 +1,4 @@
+#include "test_encodings.hpp"
 #include "test_kissat.hpp"
 #include "test_polymorphisms.hpp"
 #include <algorithm>
@@ -11,7 +12,7 @@ auto run_and_print(Test const& test) -> TestResult {
 		Overload{
 			[&](TestSuccess const& t) { spdlog::info("✓ PASSED {}", get_description(test)); },
 			[&](TestFailure const& t) {
-				spdlog::info(
+				spdlog::warn(
 					"✗ FAILED {}\n\t==> {}", get_description(test),
 					fmt::join(t.messages, "\n\t==> "));
 			}},
@@ -20,34 +21,26 @@ auto run_and_print(Test const& test) -> TestResult {
 }
 
 auto main() -> int {
-	// with std::views this whole thing would be a lot cleaner
-	spdlog::info("Concatenating all tests...");
-	const auto all_test_modules = std::vector<TestModule>{
-		test_polymorphisms,
-		test_kissat,
+	const auto test_modules = std::vector<TestModule>{
+		std::move(test_kissat),
+		std::move(test_polymorphisms),
+		std::move(test_encodings),
 	};
-	const auto n_tests = std::transform_reduce(
-		all_test_modules.begin(), all_test_modules.end(), 0, std::plus{},
-		[](auto a) { return a.tests.size(); });
-
-	auto all_tests = std::vector<Test>();
-	all_tests.reserve(n_tests);
-	std::ranges::for_each(all_test_modules, [&](TestModule const& module) {
-		all_tests.insert(all_tests.end(), module.tests.begin(), module.tests.end());
-	});
-
 	spdlog::info("Running tests...");
-	auto results = std::vector<TestResult>(n_tests);
-	std::ranges::transform(all_tests, results.begin(), run_and_print);
+	auto results = std::vector<TestResult>{};
+	std::ranges::for_each(test_modules, [&](auto const& test_module) {
+		spdlog::info("Module {} =>", test_module.description);
+		std::ranges::transform(test_module.tests, std::back_inserter(results), run_and_print);
+	});
 
 	const auto n_failures = std::ranges::count_if(results, [](TestResult const& result) {
 		return std::holds_alternative<TestFailure>(result);
 	});
 
 	if (n_failures > 0) {
-		spdlog::error("{} test(s) failed", n_failures);
+		spdlog::warn("{} of {} test(s) failed", n_failures, results.size());
 	} else {
-		spdlog::info("All {} tests from {} modules passed", n_tests, all_test_modules.size());
+		spdlog::info("All {} tests from {} module(s) passed", results.size(), test_modules.size());
 	}
 	return EXIT_SUCCESS;
 }

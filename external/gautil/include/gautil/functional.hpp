@@ -18,8 +18,9 @@ auto try_unwrap(std::vector<std::optional<T>> const& v) -> std::optional<std::ve
 			v, [](std::optional<T> const& optional_val) { return optional_val.has_value(); })) {
 		return std::nullopt;
 	}
-	auto result = std::vector<T>(v.size());
-	std::ranges::transform(v, result.begin(), [](std::optional<T> const& optional_val) {
+	auto result = std::vector<T>{};
+	result.reserve(v.size());
+	std::ranges::transform(v, std::back_inserter(result), [](std::optional<T> const& optional_val) {
 		return optional_val.value();
 	});
 	return result;

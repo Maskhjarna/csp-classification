@@ -26,12 +26,10 @@ struct TestModule {
 	std::vector<Test> tests;
 };
 
-template <typename T> auto test_eq(T const& lhs, T const& rhs) -> std::function<TestResult(void)> {
+template <typename T> auto test_eq(T const& lhs, T const& rhs) -> TestResult {
 	static_assert(fmt::has_formatter<T, fmt::format_context>());
-	return [lhs, rhs]() {
-		return lhs == rhs ? (TestResult)TestSuccess{}
-						  : (TestResult)TestFailure{{fmt::format("{} should be {}", lhs, rhs)}};
-	};
+	return lhs == rhs ? (TestResult)TestSuccess{}
+					  : (TestResult)TestFailure{{fmt::format("{} should be {}", lhs, rhs)}};
 }
 
 extern auto run_test(Test const& test) -> TestResult;

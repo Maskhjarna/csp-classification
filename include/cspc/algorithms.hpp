@@ -40,6 +40,5 @@ extern auto unary_relation(std::vector<Variable> const& variables, Relation::Ent
 extern auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation>;
 extern auto siggers_operation() -> Operation;
 extern auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP;
-extern auto label_cover_encoding(CSP const& csp) -> SAT;
 extern auto to_preserves_operation_csp(Operation const& operation, Relation const& relation) -> CSP;
 } // namespace cspc

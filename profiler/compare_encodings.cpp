@@ -4,6 +4,7 @@
 #include <cspc/algorithms.hpp>
 #include <cspc/encodings/binary.hpp>
 #include <cspc/encodings/direct.hpp>
+#include <cspc/encodings/label_cover.hpp>
 #include <cspc/kissat.hpp>
 
 auto duration_to_precise_ms(auto duration) -> f64 {
@@ -78,32 +79,25 @@ auto create_profile_for_encoding(
 		});
 
 	return profiles;
-
-	// print time profile
-	// spdlog::info("");
-	// spdlog::info("Time profile:");
-	// spdlog::info("{:<30} │ {}", "Task", "Time");
-	// spdlog::info("───────────────────────────────┼─────────────");
-	// spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing relations", time_elapsed_relations_ms);
-	// spdlog::info("{:<30} │ {:>10.2f}ms", "Constructing and solving SATs", time_elapsed_solve_ms);
-	// spdlog::info("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┼┄┄┄┄┄┄┄┄┄┄┄┄┄");
-	// spdlog::info("{:<30} │ {:>10.2f}ms", "Total", time_elapsed_total_ms);
 }
 
 auto show_profile(Labeled<std::vector<Labeled<Profile>>> const& labeled_profiles) -> void {
-	spdlog::info("╒══════════════════════════════╤══════════════╤══════════════╤══════════════╕");
 	spdlog::info(
-		"│ {:28} │ {:12} │ {:12} │ {:12} │", labeled_profiles.label, "Encoding", "Solving",
+		"╒══════════════════════════════════╤══════════════╤══════════════╤══════════════╕");
+	spdlog::info(
+		"│ {:32} │ {:12} │ {:12} │ {:12} │", labeled_profiles.label, "Encoding", "~Solving",
 		"Total");
-	spdlog::info("├──────────────────────────────┼──────────────┼──────────────┼──────────────┤");
+	spdlog::info(
+		"├──────────────────────────────────┼──────────────┼──────────────┼──────────────┤");
 	std::ranges::for_each(labeled_profiles.value, [&](auto const& labeled_profile) {
 		spdlog::info(
-			"│ {:28} │ {:>10.2f}ms │ {:>10.2f}ms │ {:>10.2f}ms │", labeled_profile.label,
+			"│ {:32} │ {:>10.2f}ms │ {:>10.2f}ms │ {:>10.2f}ms │", labeled_profile.label,
 			labeled_profile.value.time_elapsed_encoding_ms,
 			labeled_profile.value.time_elapsed_solving_ms,
 			labeled_profile.value.time_elapsed_total_ms);
 	});
-	spdlog::info("╘══════════════════════════════╧══════════════╧══════════════╧══════════════╛");
+	spdlog::info(
+		"╘══════════════════════════════════╧══════════════╧══════════════╧══════════════╛");
 }
 
 auto main() -> int {
@@ -112,6 +106,8 @@ auto main() -> int {
 		{"Multivalued direct encoding", cspc::multivalued_direct_encoding},
 		{"Binary encoding", cspc::binary_encoding},
 		{"Log encoding", cspc::log_encoding},
+		{"Label cover encoding", cspc::label_cover_encoding},
+		{"Multivalued label cover encoding", cspc::multivalued_label_cover_encoding},
 	};
 	const auto labeled_relations = std::vector<Labeled<std::vector<Relation>>>{
 		{"Binary on domain [0, 2)", cspc::all_nary_relations(2, 2)},

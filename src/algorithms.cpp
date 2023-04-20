@@ -34,10 +34,16 @@ auto create_all_tuples(size_t arity, size_t domain_size) -> std::vector<Relation
 }
 
 auto inverse(Constraint const& constraint, size_t domain_size) -> Constraint {
-	auto inverse_relation = Relation(create_all_tuples(constraint.relation.arity(), domain_size));
-	std::ranges::for_each(
-		constraint.relation, [&](Relation::Entry const& entry) { inverse_relation.erase(entry); });
-	// TODO infer tag here
+	auto sorted_all_tuples = create_all_tuples(constraint.relation.arity(), domain_size);
+	std::ranges::sort(sorted_all_tuples);
+
+	auto sorted_constraint_relation = constraint.relation.data();
+	std::ranges::sort(sorted_constraint_relation);
+
+	auto inverse_relation = std::vector<Relation::Entry>{};
+	inverse_relation.reserve(sorted_all_tuples.size() - sorted_constraint_relation.size());
+	std::ranges::set_difference(
+		sorted_all_tuples, sorted_constraint_relation, std::back_inserter(inverse_relation));
 	return Constraint(std::move(inverse_relation), constraint.variables);
 }
 
@@ -128,7 +134,6 @@ auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation> {
 		subsets, std::back_inserter(result),
 		[&](std::vector<Relation::Entry> const& v) { return Relation(v); });
 
-	std::ranges::sort(result, {}, &Relation::size);
 	return result;
 }
 
@@ -154,13 +159,11 @@ auto eq_constraint(std::vector<Variable> const& variables, size_t domain_size) -
 
 auto siggers_operation() -> Operation { return Operation(4, {{{0, 1, 0, 2}, {1, 0, 2, 1}}}); }
 
-auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP {
-	auto constraints = std::vector<Constraint>{};
-	const auto domain_size = input_csp.domain_size();
+namespace __internal {
+auto operation_identity_constraints(
+	Operation const& operation, size_t domain_size, std::vector<Constraint>& result) -> void {
 	const auto function_table_entries = std::pow(domain_size, operation.arity);
-
-	// constraints derived from operation identites
-	for (auto const& identity : operation.identities) {
+	std::ranges::for_each(operation.identities, [&](auto const& identity) {
 		for (auto i = 0u; i < identity.elements.size(); ++i) {
 			for (auto j = i + 1; j < identity.elements.size(); ++j) {
 				for (auto k = 0u; k < function_table_entries; ++k) {
@@ -172,127 +175,53 @@ auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> C
 					const auto mirror = __internal::apply_identity(
 						input, identity.elements[i], identity.elements[j]);
 					const auto k_mirror = __internal::function_input_to_index(mirror, domain_size);
-					constraints.push_back(eq_constraint({k, k_mirror}, domain_size));
+					result.push_back(eq_constraint({k, k_mirror}, domain_size));
 				}
 			}
 		}
-	}
-
+	});
+}
+auto polymorphism_constraints(
+	Constraint const& constraint,
+	size_t domain_size,
+	size_t operation_arity,
+	std::vector<Constraint>& result) -> void {
+	const auto n_indices = constraint.relation.size();
+	const auto n_iterations = (size_t)std::pow(n_indices, operation_arity);
 	// constraints from operation being polymorphism of all relations
-	for (auto constraint : input_csp.constraints()) {
-		const auto n_indices = constraint.relation.size();
-		const auto n_iterations = (size_t)std::pow(n_indices, operation.arity);
 
-		// for each choice of rows in relation
-		auto current_relation_indices = Relation::Entry(operation.arity);
-		gautil::repeat(n_iterations, [&]() {
-			// extract each column by index in the set of rows and get its index in the function
-			// table
-			auto indices = std::vector<Variable>(constraint.relation.arity());
-			for (auto j = 0u; j < constraint.relation.arity(); ++j) {
-				auto input = Relation::Entry(operation.arity);
-				for (auto k = 0u; k < operation.arity; ++k) {
-					input[k] = constraint.relation[current_relation_indices[k]][j];
-				}
-				indices[j] = __internal::function_input_to_index(input, domain_size);
+	// for each choice of rows in relation
+	auto current_relation_indices = Relation::Entry(operation_arity);
+	gautil::repeat(n_iterations, [&]() {
+		// extract each column by index in the set of rows and get its index in the function
+		// table
+		auto indices = std::vector<Variable>(constraint.relation.arity());
+		for (auto j = 0u; j < constraint.relation.arity(); ++j) {
+			auto input = Relation::Entry(operation_arity);
+			for (auto k = 0u; k < operation_arity; ++k) {
+				input[k] = constraint.relation[current_relation_indices[k]][j];
 			}
-			// the ordered values at the set of indices must be in the relation
-			constraints.push_back(Constraint(constraint.relation, indices));
+			indices[j] = __internal::function_input_to_index(input, domain_size);
+		}
+		// the ordered values at the set of indices must be in the relation
+		result.push_back(Constraint(constraint.relation, indices));
 
-			__internal::increment_in_domain(current_relation_indices, n_indices);
-		});
-	}
+		__internal::increment_in_domain(current_relation_indices, n_indices);
+	});
+}
+} // namespace __internal
+
+auto has_polymorphism_csp(CSP const& input_csp, Operation const& operation) -> CSP {
+	auto constraints = std::vector<Constraint>{};
+
+	__internal::operation_identity_constraints(operation, input_csp.domain_size(), constraints);
+
+	std::ranges::for_each(input_csp.constraints(), [&](Constraint const& constraint) {
+		__internal::polymorphism_constraints(
+			constraint, input_csp.domain_size(), operation.arity, constraints);
+	});
 
 	return CSP(std::move(constraints));
-}
-
-auto label_cover_encoding(CSP const& csp) -> SAT {
-	const auto n_constraints = csp.constraints().size();
-	const auto n_csp_vars = csp.n_variables() * csp.domain_size();
-
-	auto n_clauses = csp.n_variables() * gautil::n_choose_k(csp.domain_size(), 2) +
-					 csp.n_variables() + n_constraints;
-	for (auto i = 0u; i < n_constraints; ++i) {
-		const auto n_entries = csp.constraints()[i].relation.size();
-		const auto arity = csp.constraints()[i].relation.arity();
-		n_clauses += gautil::n_choose_k(n_entries, 2) + n_entries * arity;
-	}
-
-	auto clauses = std::vector<Clause>(n_clauses);
-	auto clause_offset = size_t{0};
-
-	// At most one assignment to each CSP variable
-	for (auto i = 0u, variable_offset = 0u; i < csp.n_variables(); ++i) {
-		for (auto j = 0u; j < csp.domain_size(); ++j) {
-			for (auto k = j + 1; k < csp.domain_size(); ++k) {
-				clauses[clause_offset] = {
-					Literal(variable_offset + j, NEGATED),
-					Literal(variable_offset + k, NEGATED),
-				};
-				clause_offset += 1;
-			}
-		}
-		variable_offset += csp.domain_size();
-	}
-
-	// At least one assignment to each CSP variable
-	for (auto i = 0u, variable_offset = 0u; i < csp.n_variables(); ++i) {
-		clauses[clause_offset].reserve(csp.domain_size());
-		for (auto j = 0u; j < csp.domain_size(); ++j) {
-			clauses[clause_offset].push_back(Literal(variable_offset, REGULAR));
-		}
-		variable_offset += csp.domain_size();
-		clause_offset += 1;
-	}
-
-	// At most one row in constraint relation true
-	for (auto i = 0u, variable_offset = 0u; i < n_constraints; ++i) {
-		const auto n_entries = csp.constraints()[i].relation.size();
-		for (auto j = 0u; j < n_entries; ++j) {
-			const auto entry_variable = n_csp_vars + variable_offset + j;
-			for (auto k = j + 1; k < n_entries; ++k) {
-				const auto other_entry_variable = n_csp_vars + variable_offset + k;
-				clauses[clause_offset] = {
-					Literal(entry_variable, NEGATED),
-					Literal(other_entry_variable, NEGATED),
-				};
-				clause_offset += 1;
-			}
-		}
-		variable_offset += n_entries;
-	}
-	// At least one row in constraint relation true
-	for (auto i = 0u, variable_offset = 0u; i < n_constraints; ++i) {
-		const auto n_entries = csp.constraints()[i].relation.size();
-		clauses[clause_offset].reserve(n_entries);
-		for (auto j = 0u; j < n_entries; ++j) {
-			const auto relation_entry_true = n_csp_vars + variable_offset + j;
-			clauses[clause_offset].push_back(Literal(relation_entry_true, REGULAR));
-		}
-		variable_offset += n_entries;
-		clause_offset += 1;
-	}
-
-	// A variable representing an entry in a constraint relation implies an assignment to the
-	// variables which the relation concerns.
-	for (auto i = 0u, variable_offset = 0u; i < n_constraints; ++i) {
-		const auto n_entries = csp.constraints()[i].relation.size();
-		const auto arity = csp.constraints()[i].relation.arity();
-		for (auto j = 0u; j < n_entries; ++j) {
-			const auto relation_entry_true = n_csp_vars + variable_offset + j;
-			for (auto k = 0u; k < arity; ++k) {
-				const auto xk_eq_reljk = csp.constraints()[i].variables[k] * csp.domain_size() +
-										 csp.constraints()[i].relation[j][k];
-				clauses[clause_offset] = {
-					Literal(relation_entry_true, NEGATED),
-					Literal(xk_eq_reljk, REGULAR),
-				};
-				clause_offset += 1;
-			}
-		}
-		variable_offset += n_entries;
-	}
-	return SAT(std::move(clauses));
 }
 
 auto to_preserves_operation_csp(Operation const& operation, Relation const& relation) -> CSP {

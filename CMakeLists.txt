@@ -25,7 +25,9 @@ add_library(${PROJECT_NAME}
 
   "src/minizinc.cpp"
   "src/kissat.cpp"
+  "src/encodings/common.cpp"
   "src/encodings/binary.cpp"
+  "src/encodings/label_cover.cpp"
   "src/encodings/direct.cpp"
   "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
