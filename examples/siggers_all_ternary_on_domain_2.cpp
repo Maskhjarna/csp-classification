@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include "cspc/algorithms.hpp"
+#include <cspc/algorithms.hpp>
 #include <cspc/encodings/direct.hpp>
 
 auto main() -> int {

@@ -6,6 +6,8 @@
 #include <functional>
 #include <numeric>
 #include <optional>
+#include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/ansicolor_sink.h>
 #include <spdlog/spdlog.h>
 #include <vector>
 
@@ -96,7 +98,7 @@ auto transform_and_print_progress(Range&& range, OutputIterator result, Function
 		unary_transform_result<std::ranges::borrowed_iterator_t<Range>, OutputIterator> {
 	// setup logger
 	constexpr auto PROGRESS_BAR_LENGTH = uint32_t{20};
-	const auto console_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_st>();
+	const auto console_sink = std::make_shared<spdlog::sinks::ansicolor_stdout_sink_mt>();
 	auto carriage_return_logger = spdlog::logger("logger", {console_sink});
 	carriage_return_logger.set_formatter(std::make_unique<spdlog::pattern_formatter>(
 		"[%Y-%m-%d %H:%M:%S.%e] [%l] %v", spdlog::pattern_time_type::local, std::string("\r")));

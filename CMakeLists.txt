@@ -11,9 +11,6 @@ option(CSPC_BUILD_EXAMPLES "Build examples" ON)
 option(CSPC_BUILD_PROFILER "Build profiler" ON)
 
 add_subdirectory(external)
-find_package(fmt REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(Threads REQUIRED)
 
 add_library(${PROJECT_NAME}
   "include/cspc/data_structures.hpp"
@@ -41,10 +38,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "include/"
 )
 target_link_libraries(${PROJECT_NAME} 
-  fmt
-  spdlog
-  libkissat
-  gautil
+  external_spdlog
+  external_kissat
+  external_gautil
   ${CMAKE_THREAD_LIBS_INIT}
 )
 

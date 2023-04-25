@@ -76,7 +76,7 @@ const auto test_apply_identity_rare = TestBundle{
 } // namespace
 
 const TestModule test_polymorphisms = {
-	.description = "Polymorphism tests",
+	.description = "polymorphism tests",
 	.tests =
 		{
 			test_index_to_function_input,

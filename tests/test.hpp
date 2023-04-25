@@ -29,7 +29,7 @@ struct TestModule {
 template <typename T> auto test_eq(T const& lhs, T const& rhs) -> TestResult {
 	static_assert(fmt::has_formatter<T, fmt::format_context>());
 	return lhs == rhs ? (TestResult)TestSuccess{}
-					  : (TestResult)TestFailure{{fmt::format("{} should be {}", lhs, rhs)}};
+					  : (TestResult)TestFailure{{fmt::format("{}    should be    {}", lhs, rhs)}};
 }
 
 extern auto run_test(Test const& test) -> TestResult;

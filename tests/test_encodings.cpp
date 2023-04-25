@@ -148,19 +148,21 @@ constexpr auto EXPECTED_TERNARY_ON_DOMAIN_2_SATISFIABILITY = std::array<Satisfia
 	UNSATISFIABLE, // [(1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1), (0, 1, 1)]
 };
 
-auto solve_with_encoding(std::vector<Relation> relations, std::function<SAT(CSP)> encoding)
+template <typename Encoding>
+auto solve_with_encoding(std::vector<Relation> relations, Encoding encoding)
 	-> std::vector<Satisfiability> {
 	auto satisfiable = std::vector<Satisfiability>{};
 	satisfiable.reserve(relations.size());
 	std::ranges::transform(relations, std::back_inserter(satisfiable), [&](auto const& relation) {
 		const auto csp = cspc::to_preserves_operation_csp(cspc::siggers_operation(), relation);
-		const auto sat = cspc::multivalued_direct_encoding(csp);
+		const auto sat = encoding(csp);
 		return solvers::solve_kissat(sat);
 	});
 	return satisfiable;
 }
 
-auto encoding_test_bundle(std::string const& name, std::function<SAT(CSP)> encoding) -> TestBundle {
+template <typename Encoding>
+auto encoding_test_bundle(std::string const& name, Encoding encoding) -> TestBundle {
 	return TestBundle{
 		name,
 		{

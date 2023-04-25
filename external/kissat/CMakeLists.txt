@@ -22,10 +22,10 @@ ExternalProject_Get_Property(kissat INSTALL_DIR)
 file(MAKE_DIRECTORY "${INSTALL_DIR}/include")
 file(MAKE_DIRECTORY "${INSTALL_DIR}/lib")
 
-add_library(libkissat STATIC IMPORTED GLOBAL)
-target_include_directories(libkissat INTERFACE "${INSTALL_DIR}/include")
-set_target_properties(libkissat PROPERTIES
+add_library(external_kissat STATIC IMPORTED GLOBAL)
+target_include_directories(external_kissat INTERFACE "${INSTALL_DIR}/include")
+set_target_properties(external_kissat PROPERTIES
   IMPORTED_LOCATION "${INSTALL_DIR}/lib/libkissat.a"
   INTERFACE_INCLUDE_DIRECTORIES "${INSTALL_DIR}/include")
 
-add_dependencies(libkissat kissat)
+add_dependencies(external_kissat kissat)
