@@ -2,7 +2,7 @@
 
 #include "data_structures.hpp"
 
-constexpr auto EXPORT_DIR = std::string{"output/"};
+const auto EXPORT_DIR = std::string("output/");
 
 namespace solvers {
 extern auto csp_to_minizinc(CSP const& csp) -> std::optional<std::string>;

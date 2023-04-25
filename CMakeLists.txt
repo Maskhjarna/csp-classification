@@ -28,6 +28,7 @@ add_library(${PROJECT_NAME}
   "src/encodings/direct.cpp"
   "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wall
   -Wextra

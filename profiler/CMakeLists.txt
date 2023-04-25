@@ -1,12 +1,12 @@
 project("cspc_profiling")
 
 find_package(Threads REQUIRED)
-find_package(TBB REQUIRED COMPONENTS tbb)
+#find_package(TBB REQUIRED COMPONENTS tbb)
 
 add_library(cspc_profiler_base INTERFACE)
 target_link_libraries(cspc_profiler_base INTERFACE
 	Threads::Threads
-	tbb
+	#tbb
 	cspc)
 
 function(add_cspc_profiler name files)
