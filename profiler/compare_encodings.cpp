@@ -39,7 +39,7 @@ auto sat_n_literals(SAT const& sat) -> size_t {
 }
 
 template <typename Encoding>
-auto time_encode_ms(Encoding encoding, std::span<CSP const> csps) -> std::tuple<f64, size_t> {
+auto time_encode_ms(Encoding encoding, std::vector<CSP> const& csps) -> std::tuple<f64, size_t> {
 	auto sats = std::vector<std::optional<SAT>>(csps.size());
 	const auto time_before = std::chrono::system_clock::now();
 	for (auto i = 0u; i < N_SAMPLES; ++i) {
@@ -57,7 +57,7 @@ auto time_encode_ms(Encoding encoding, std::span<CSP const> csps) -> std::tuple<
 }
 
 template <typename Encoding>
-auto time_encode_and_solve_ms(Encoding encoding, std::span<CSP const> csps) -> f64 {
+auto time_encode_and_solve_ms(Encoding encoding, std::vector<CSP> const& csps) -> f64 {
 	auto sats = std::vector<std::optional<SAT>>(csps.size());
 	auto satisfiable = std::vector<Satisfiability>(csps.size());
 	const auto time_before = std::chrono::system_clock::now();
