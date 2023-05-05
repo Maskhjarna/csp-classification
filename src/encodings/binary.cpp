@@ -60,28 +60,6 @@ auto create_prohibited_value_clauses(
 }
 } // namespace __internal
 
-auto log_encoding(CSP const& csp) -> SAT {
-	const auto n_bits =
-		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
-	const auto nogoods = __internal::nogoods(csp.constraints(), csp.domain_size());
-	const auto inclusive_domain_size = std::pow(2, n_bits);
-
-	// NOTE: without reservation push_back is not thread safe in the comming calls
-	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &Constraint::relation_size) +
-						   n_bits * csp.n_variables() * (inclusive_domain_size - csp.domain_size());
-	auto clauses = std::vector<Clause>{};
-	clauses.reserve(n_clauses);
-
-	__internal::create_nogood_clauses(nogoods, n_bits, std::back_inserter(clauses));
-	__internal::create_prohibited_value_clauses(
-		csp.n_variables(), csp.domain_size(), inclusive_domain_size, n_bits,
-		std::back_inserter(clauses));
-
-	assert(n_clauses == clauses.size());
-
-	return SAT(std::move(clauses));
-}
-
 auto binary_encoding(CSP const& csp) -> SAT {
 	const auto n_bits =
 		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
@@ -98,4 +76,26 @@ auto binary_encoding(CSP const& csp) -> SAT {
 
 	return SAT(std::move(clauses));
 }
+
+auto log_encoding(CSP const& csp) -> SAT {
+	const auto n_bits =
+		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
+	const auto nogoods = __internal::nogoods(csp.constraints(), csp.domain_size());
+	const auto inclusive_domain_size = std::pow(2, n_bits);
+
+	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &Constraint::relation_size) +
+						   n_bits * csp.n_variables() * (inclusive_domain_size - csp.domain_size());
+	auto clauses = std::vector<Clause>{};
+	clauses.reserve(n_clauses);
+
+	__internal::create_nogood_clauses(nogoods, n_bits, std::back_inserter(clauses));
+	__internal::create_prohibited_value_clauses(
+		csp.n_variables(), csp.domain_size(), inclusive_domain_size, n_bits,
+		std::back_inserter(clauses));
+
+	assert(n_clauses == clauses.size());
+
+	return SAT(std::move(clauses));
+}
+
 } // namespace cspc

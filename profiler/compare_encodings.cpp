@@ -9,7 +9,7 @@
 #include <gautil/functional.hpp>
 #include <gautil/math.hpp>
 
-constexpr auto N_SAMPLES = 1;
+constexpr auto N_SAMPLES = 30;
 
 auto duration_to_precise_ms(auto duration) -> f64 {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() /
@@ -30,34 +30,21 @@ struct Profile {
 	f64 time_elapsed_solving_ms;
 	f64 time_elapsed_total_ms;
 	size_t sat_n_literals;
+	size_t sat_n_bytes;
 };
 
-auto clause_n_literals(Clause const& clause) -> size_t { return sizeof(Literal) * clause.size(); }
-
 auto sat_n_literals(SAT const& sat) -> size_t {
-	return gautil::fold(sat.clauses(), 0ul, std::plus{}, clause_n_literals);
+	return gautil::fold(sat.clauses(), 0ul, std::plus{}, &Clause::size);
+}
+
+auto sat_n_bytes(SAT const& sat) -> size_t {
+	return sizeof(SAT) + sat.clauses().size() * sizeof(Clause) +
+		   sat_n_literals(sat) * sizeof(Literal);
 }
 
 template <typename Encoding>
-auto time_encode_ms(Encoding encoding, std::vector<CSP> const& csps) -> std::tuple<f64, size_t> {
-	auto sats = std::vector<std::optional<SAT>>(csps.size());
-	const auto time_before = std::chrono::system_clock::now();
-	for (auto i = 0u; i < N_SAMPLES; ++i) {
-		std::transform(
-			std::execution::par_unseq, csps.begin(), csps.end(), sats.begin(),
-			[&](auto const& csp) { return encoding(csp); });
-	}
-	const auto time_after = std::chrono::system_clock::now();
-	const auto n_literals = gautil::fold(
-		sats, 0ul, std::plus{}, [&](auto const& sat) { return sat_n_literals(sat.value()); });
-	return {
-		duration_to_precise_ms(time_after - time_before) / N_SAMPLES,
-		n_literals,
-	};
-}
-
-template <typename Encoding>
-auto time_encode_and_solve_ms(Encoding encoding, std::vector<CSP> const& csps) -> f64 {
+auto profile_encode_and_encode_plus_solve(Encoding encoding, std::vector<CSP> const& csps)
+	-> Profile {
 	auto sats = std::vector<std::optional<SAT>>(csps.size());
 	auto satisfiable = std::vector<Satisfiability>(csps.size());
 	const auto time_before = std::chrono::system_clock::now();
@@ -65,12 +52,25 @@ auto time_encode_and_solve_ms(Encoding encoding, std::vector<CSP> const& csps) -
 		std::transform(
 			std::execution::par_unseq, csps.begin(), csps.end(), sats.begin(),
 			[&](auto const& csp) { return encoding(csp); });
+	}
+	const auto time_between = std::chrono::system_clock::now();
+	for (auto i = 0u; i < N_SAMPLES; ++i) {
 		std::transform(
 			std::execution::par_unseq, sats.begin(), sats.end(), satisfiable.begin(),
 			[&](auto const& sat) { return solvers::solve_kissat(sat.value()); });
 	}
 	const auto time_after = std::chrono::system_clock::now();
-	return duration_to_precise_ms(time_after - time_before) / N_SAMPLES;
+	const auto n_literals = gautil::fold(
+		sats, 0ul, std::plus{}, [&](auto const& sat) { return sat_n_literals(sat.value()); });
+	const auto n_bytes = gautil::fold(
+		sats, 0ul, std::plus{}, [&](auto const& sat) { return sat_n_bytes(sat.value()); });
+	return Profile{
+		.time_elapsed_encoding_ms = duration_to_precise_ms(time_between - time_before) / N_SAMPLES,
+		.time_elapsed_solving_ms = duration_to_precise_ms(time_after - time_between) / N_SAMPLES,
+		.time_elapsed_total_ms = duration_to_precise_ms(time_after - time_before) / N_SAMPLES,
+		.sat_n_literals = n_literals,
+		.sat_n_bytes = n_bytes,
+	};
 }
 
 template <typename Encoding>
@@ -89,16 +89,7 @@ auto create_profile_for_encoding(
 					relations, std::back_inserter(csps), [&](auto const& relation) {
 						return cspc::to_preserves_operation_csp(siggers, relation);
 					});
-
-				const auto [time_elapsed_encoding_ms, sat_n_literals] =
-					time_encode_ms(encoding, csps);
-				const auto time_elapsed_total_ms = time_encode_and_solve_ms(encoding, csps);
-				return Profile{
-					.time_elapsed_encoding_ms = time_elapsed_encoding_ms,
-					.time_elapsed_solving_ms = time_elapsed_total_ms - time_elapsed_encoding_ms,
-					.time_elapsed_total_ms = time_elapsed_total_ms,
-					.sat_n_literals = sat_n_literals,
-				};
+				return profile_encode_and_encode_plus_solve(encoding, csps);
 			});
 		});
 
