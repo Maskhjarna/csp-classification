@@ -117,6 +117,7 @@ auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation> {
 	const auto all_tuples = __internal::create_all_tuples(n, domain_size);
 
 	// tuples (a, b, c, ...) where a != b or a != c or ... or b != c or ...
+	// <=> U  \ (a, b, c, ...) where (a == b == c == ...)
 	auto tuples = std::vector<Relation::Entry>{};
 	tuples.reserve(n_tuples - domain_size);
 	std::ranges::copy_if(all_tuples, std::back_inserter(tuples), [](Relation::Entry const& tuple) {
@@ -131,8 +132,7 @@ auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<Relation> {
 	auto result = std::vector<Relation>{};
 	result.reserve(subsets.size());
 	std::ranges::transform(
-		subsets, std::back_inserter(result),
-		[&](std::vector<Relation::Entry> const& v) { return Relation(v); });
+		subsets, std::back_inserter(result), [&](auto const& v) { return Relation(v); });
 
 	return result;
 }
@@ -181,6 +181,7 @@ auto operation_identity_constraints(
 		}
 	});
 }
+
 auto polymorphism_constraints(
 	Constraint const& constraint,
 	size_t domain_size,

@@ -45,29 +45,39 @@ auto sat_n_bytes(SAT const& sat) -> size_t {
 template <typename Encoding>
 auto profile_encode_and_encode_plus_solve(Encoding encoding, std::vector<CSP> const& csps)
 	-> Profile {
-	auto sats = std::vector<std::optional<SAT>>(csps.size());
-	auto satisfiable = std::vector<Satisfiability>(csps.size());
+
+	// time encode
 	const auto time_before = std::chrono::system_clock::now();
 	for (auto i = 0u; i < N_SAMPLES; ++i) {
-		std::transform(
-			std::execution::par_unseq, csps.begin(), csps.end(), sats.begin(),
-			[&](auto const& csp) { return encoding(csp); });
+		std::for_each(std::execution::par_unseq, csps.begin(), csps.end(), encoding);
 	}
 	const auto time_between = std::chrono::system_clock::now();
+
+	// time encode and solve
 	for (auto i = 0u; i < N_SAMPLES; ++i) {
-		std::transform(
-			std::execution::par_unseq, sats.begin(), sats.end(), satisfiable.begin(),
-			[&](auto const& sat) { return solvers::solve_kissat(sat.value()); });
+		std::for_each(std::execution::par_unseq, csps.begin(), csps.end(), [&](auto const& csp) {
+			solvers::solve_kissat(encoding(csp));
+		});
 	}
 	const auto time_after = std::chrono::system_clock::now();
+
+	// count literals
 	const auto n_literals = gautil::fold(
-		sats, 0ul, std::plus{}, [&](auto const& sat) { return sat_n_literals(sat.value()); });
+		csps, 0u, std::plus{}, [&](auto const& csp) { return sat_n_literals(encoding(csp)); });
 	const auto n_bytes = gautil::fold(
-		sats, 0ul, std::plus{}, [&](auto const& sat) { return sat_n_bytes(sat.value()); });
+		csps, 0u, std::plus{}, [&](auto const& csp) { return sat_n_bytes(encoding(csp)); });
+
+	// calculate time spans
+	const auto time_elapsed_encoding_ms =
+		duration_to_precise_ms(time_between - time_before) / N_SAMPLES;
+	const auto time_elapsed_total_ms =
+		duration_to_precise_ms(time_after - time_between) / N_SAMPLES;
+	const auto time_elapsed_solving_ms = time_elapsed_total_ms - time_elapsed_encoding_ms;
+
 	return Profile{
-		.time_elapsed_encoding_ms = duration_to_precise_ms(time_between - time_before) / N_SAMPLES,
-		.time_elapsed_solving_ms = duration_to_precise_ms(time_after - time_between) / N_SAMPLES,
-		.time_elapsed_total_ms = duration_to_precise_ms(time_after - time_before) / N_SAMPLES,
+		.time_elapsed_encoding_ms = time_elapsed_encoding_ms,
+		.time_elapsed_solving_ms = time_elapsed_solving_ms,
+		.time_elapsed_total_ms = time_elapsed_total_ms,
 		.sat_n_literals = n_literals,
 		.sat_n_bytes = n_bytes,
 	};
@@ -78,10 +88,11 @@ auto create_profile_for_encoding(
 	Encoding encoding, std::vector<Labeled<std::vector<Relation>>> const& labeled_relation_bundles)
 	-> std::vector<Labeled<Profile>> {
 	const auto siggers = cspc::siggers_operation();
-	auto profiles = std::vector<Labeled<Profile>>(labeled_relation_bundles.size());
-	std::transform(
-		std::execution::par_unseq, labeled_relation_bundles.begin(), labeled_relation_bundles.end(),
-		profiles.begin(), [&](auto const& labeled_relations) {
+	auto profiles = std::vector<Labeled<Profile>>{};
+	profiles.reserve(labeled_relation_bundles.size());
+	std::ranges::transform(
+		labeled_relation_bundles, std::back_inserter(profiles), [&](auto const& labeled_relations) {
+			spdlog::info("    ... {}", labeled_relations.label);
 			return labeled_relations.map([&](auto const& relations) {
 				auto csps = std::vector<CSP>{};
 				csps.reserve(relations.size());
@@ -130,8 +141,9 @@ auto main() -> int {
 	const auto labeled_relations = std::vector<Labeled<std::vector<Relation>>>{
 		{"Binary on domain [0, 2)", cspc::all_nary_relations(2, 2)},
 		{"Binary on domain [0, 3)", cspc::all_nary_relations(2, 3)},
-		// {"Binary on domain [0, 4)", cspc::all_nary_relations(2, 4)}, // NOTE: slow
+		{"Binary on domain [0, 4)", cspc::all_nary_relations(2, 4)}, // NOTE: slow
 		{"Ternary on domain [0, 2)", cspc::all_nary_relations(3, 2)},
+		{"Quaternary on domain [0, 4)", cspc::all_nary_relations(2, 4)}, // NOTE: slow
 	};
 	auto profiles = std::vector<Labeled<std::vector<Labeled<Profile>>>>{};
 	std::ranges::transform(
