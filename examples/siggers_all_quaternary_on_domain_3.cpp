@@ -3,6 +3,6 @@
 #include <cspc/encodings/direct.hpp>
 
 auto main() -> int {
-	check_all_nary_on_domain(2, 2, encoding_siggers_checker());
+	check_all_nary_on_domain(4, 3, encoding_siggers_checker());
 	return EXIT_SUCCESS;
 }

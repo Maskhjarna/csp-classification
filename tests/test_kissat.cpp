@@ -8,43 +8,43 @@ const auto test_kissat_simple = TestBundle{
 	{
 		[]() {
 			return test_eq(
-				solvers::solve_kissat(SAT{
-					Clause{Literal{0, REGULAR}},
+				cspc::kissat_is_satisfiable(cspc::sat{
+					cspc::clause{cspc::literal{0, cspc::REGULAR}},
 				}),
-				SATISFIABLE);
+				cspc::SATISFIABLE);
 		},
 		[]() {
 			return test_eq(
-				solvers::solve_kissat(SAT{
-					Clause{Literal{0, REGULAR}, Literal{1, REGULAR}},
+				cspc::kissat_is_satisfiable(cspc::sat{
+					cspc::clause{cspc::literal{0, cspc::REGULAR}, cspc::literal{1, cspc::REGULAR}},
 				}),
-				SATISFIABLE);
+				cspc::SATISFIABLE);
 		},
 		[]() {
 			return test_eq(
-				solvers::solve_kissat(SAT{
-					Clause{Literal{1, REGULAR}},
-					Clause{Literal{1, NEGATED}},
+				cspc::kissat_is_satisfiable(cspc::sat{
+					cspc::clause{cspc::literal{1, cspc::REGULAR}},
+					cspc::clause{cspc::literal{1, cspc::NEGATED}},
 				}),
-				UNSATISFIABLE);
+				cspc::UNSATISFIABLE);
 		},
 		[]() {
 			return test_eq(
-				solvers::solve_kissat(SAT{
-					Clause{Literal{0, NEGATED}, Literal{1, REGULAR}},
-					Clause{Literal{1, NEGATED}, Literal{2, REGULAR}},
-					Clause{Literal{2, NEGATED}, Literal{0, REGULAR}},
+				cspc::kissat_is_satisfiable(cspc::sat{
+					cspc::clause{cspc::literal{0, cspc::NEGATED}, cspc::literal{1, cspc::REGULAR}},
+					cspc::clause{cspc::literal{1, cspc::NEGATED}, cspc::literal{2, cspc::REGULAR}},
+					cspc::clause{cspc::literal{2, cspc::NEGATED}, cspc::literal{0, cspc::REGULAR}},
 				}),
-				SATISFIABLE);
+				cspc::SATISFIABLE);
 		},
 		[]() {
 			return test_eq(
-				solvers::solve_kissat(SAT{
-					Clause{Literal{0, REGULAR}, Literal{1, REGULAR}},
-					Clause{Literal{1, NEGATED}, Literal{0, REGULAR}},
-					Clause{Literal{0, NEGATED}},
+				cspc::kissat_is_satisfiable(cspc::sat{
+					cspc::clause{cspc::literal{0, cspc::REGULAR}, cspc::literal{1, cspc::REGULAR}},
+					cspc::clause{cspc::literal{1, cspc::NEGATED}, cspc::literal{0, cspc::REGULAR}},
+					cspc::clause{cspc::literal{0, cspc::NEGATED}},
 				}),
-				UNSATISFIABLE);
+				cspc::UNSATISFIABLE);
 		},
 	},
 };

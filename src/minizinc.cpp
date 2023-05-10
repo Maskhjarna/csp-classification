@@ -7,84 +7,83 @@
 #include <numeric>
 #include <spdlog/spdlog.h>
 
-namespace solvers {
-auto csp_to_minizinc(CSP const& csp) -> std::optional<std::string> {
+namespace cspc {
+auto csp_to_minizinc(cspc::csp const& csp) -> std::string {
+
 	const auto header = fmt::format(
 		"set of int: DOM = 0..{domain_size};\n"
 		"int: n = {n_variables};\n"
 		"\n"
-		"array [0..n] of var DOM: data;\n"
-		"\n",
+		"array [0..n] of var DOM: data;\n",
 		fmt::arg("n_variables", csp.n_variables() - 1),
 		fmt::arg("domain_size", csp.domain_size() - 1));
-	auto constraint_strings = std::vector<std::string>(csp.constraints().size());
+
+	const auto footer = "\nsolve satisfy;\noutput [];";
+
+	auto body = std::vector<std::string>{};
+	body.resize(csp.constraints().size());
 	std::ranges::transform(
-		csp.constraints(), constraint_strings.begin(),
-		[](Constraint const& constraint) -> std::string {
-			switch (constraint.tag) {
-			case EQ:
+		csp.constraints(), std::back_inserter(body), [&](auto const& constraint) {
+			switch (constraint.tag()) {
+			case cspc::constraint_tag::EQ:
 				return fmt::format(
-					"constraint data[{}] == data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case NE:
+					"constraint data[{}] == data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::NE:
 				return fmt::format(
-					"constraint data[{}] != data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case GT:
+					"constraint data[{}] != data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::GT:
 				return fmt::format(
-					"constraint data[{}] > data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case GE:
+					"constraint data[{}] > data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::GE:
 				return fmt::format(
-					"constraint data[{}] >= data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case LT:
+					"constraint data[{}] >= data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::LT:
 				return fmt::format(
-					"constraint data[{}] < data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case LE:
+					"constraint data[{}] < data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::LE:
 				return fmt::format(
-					"constraint data[{}] <= data[{}];\n", constraint.variables[0],
-					constraint.variables[1]);
-			case IS:
+					"constraint data[{}] <= data[{}];", constraint.variables()[0],
+					constraint.variables()[1]);
+			case cspc::constraint_tag::IS:
 				return fmt::format(
-					"constraint data[{}] = {};\n", constraint.variables[0], constraint.relation[0]);
-			case OTHER: {
-				auto result = std::vector<std::string>{};
-				for (auto row : constraint.relation) {
-					auto literals = std::vector<std::string>(constraint.variables.size());
-					for (auto i = 0u; i < constraint.variables.size(); ++i) {
-						literals[i] =
-							fmt::format("data[{}] == {}", constraint.variables[i], row[i]);
-					}
-					result.push_back(fmt::format("{}", fmt::join(literals, " /\\ ")));
-				}
-				return fmt::format("constraint ({});\n", fmt::join(result, " \\/ "));
+					"constraint data[{}] = {};", constraint.variables()[0],
+					constraint.get_relation()[0]);
+			case cspc::constraint_tag::OTHER: {
+				auto clauses = std::vector<std::string>{};
+				clauses.reserve(constraint.get_relation().size());
+				std::ranges::transform(
+					constraint.get_relation(), std::back_inserter(clauses), [&](auto const& row) {
+						auto literals = std::vector<std::string>(constraint.variables().size());
+						for (auto i = 0u; i < constraint.variables().size(); ++i) {
+							literals[i] =
+								fmt::format("data[{}] == {}", constraint.variables()[i], row[i]);
+						}
+						return fmt::format("{}\n", fmt::join(literals, " /\\ "));
+					});
+				return fmt::format("\nconstraint ({});", fmt::join(clauses, " \\/ "));
 			}
 			}
-			spdlog::critical("Malformed input encountered in minizinc.cpp");
+			spdlog::critical("Unexhaustive switch");
 			exit(EXIT_FAILURE);
+			return std::string{};
 		});
-	const auto result =
-		header +
-		std::accumulate(constraint_strings.begin(), constraint_strings.end(), std::string{}) +
-		"\nsolve satisfy;\noutput [];";
-	return result;
+
+	return fmt::format("{}\n{}\n{}", header, fmt::join(body, "\n"), footer);
 }
 
-auto write_csp_as_minizinc(CSP const& csp) -> std::optional<std::string> {
-	const auto path = std::filesystem::path{EXPORT_DIR + "csp.mzn"};
+auto write_csp_as_minizinc(cspc::csp const& csp) -> std::optional<std::string> {
+	const auto path = std::filesystem::path{EXPORT_FILE_PATH};
 	if (!std::filesystem::is_directory(path.parent_path()) &&
 		!std::filesystem::create_directories(path.parent_path())) {
 		spdlog::error("Failed to create output directory");
 		return std::nullopt;
 	}
-	const auto maybe_output = csp_to_minizinc(csp);
-	if (!maybe_output.has_value()) {
-		spdlog::error("Failed to create MiniZinc input from CSP");
-		return std::nullopt;
-	}
-	auto const& output = maybe_output.value();
+	const auto output = csp_to_minizinc(csp);
 	auto ofs = std::ofstream(path);
 	if (!ofs.write(output.data(), output.size())) {
 		spdlog::error("Failed to write file");
@@ -93,7 +92,7 @@ auto write_csp_as_minizinc(CSP const& csp) -> std::optional<std::string> {
 	return path;
 }
 
-auto solve_minizinc(CSP const& csp) -> std::optional<Satisfiability> {
+auto minizinc_is_satisfiable(cspc::csp const& csp) -> std::optional<cspc::satisfiability> {
 	static constexpr auto MINIZINC_OUTPUT_SATISFIABLE = "----------\n";
 	static constexpr auto MINIZINC_OUTPUT_UNSATISFIABLE = "=====UNSATISFIABLE=====\n";
 
@@ -103,23 +102,22 @@ auto solve_minizinc(CSP const& csp) -> std::optional<Satisfiability> {
 		return std::nullopt;
 	}
 
-	const auto command =
-		fmt::format("cat {} | minizinc --solver gecode --input-from-stdin", maybe_path.value());
+	const auto command = fmt::format("minizinc --solver Gecode {}", maybe_path.value());
 
 	const auto maybe_minizinc_output = gautil::call(command);
 	if (!maybe_minizinc_output.has_value()) {
 		spdlog::error("Failed executing MiniZinc");
 		return std::nullopt;
 	}
-	auto const& minizinc_output = maybe_minizinc_output.value();
+	const auto minizinc_output = maybe_minizinc_output.value();
 
 	if (minizinc_output == MINIZINC_OUTPUT_SATISFIABLE) {
-		return SATISFIABLE;
+		return cspc::SATISFIABLE;
 	} else if (minizinc_output == MINIZINC_OUTPUT_UNSATISFIABLE) {
-		return UNSATISFIABLE;
+		return cspc::UNSATISFIABLE;
 	}
 	spdlog::error("Unexpected output from MiniZinc: {}", minizinc_output);
 	return std::nullopt;
 }
 
-} // namespace solvers
+} // namespace cspc

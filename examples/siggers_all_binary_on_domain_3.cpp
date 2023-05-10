@@ -3,6 +3,6 @@
 #include <cspc/encodings/direct.hpp>
 
 auto main() -> int {
-	siggers_all_nary_on_domain_sequential(2, 3, cspc::multivalued_direct_encoding);
+	check_all_nary_on_domain(2, 3, encoding_siggers_checker());
 	return EXIT_SUCCESS;
 }

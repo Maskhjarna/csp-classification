@@ -7,6 +7,6 @@ extern "C" {
 #include <kissat.h>
 }
 
-namespace solvers {
-extern auto solve_kissat(SAT const& sat) -> Satisfiability;
+namespace cspc {
+extern auto kissat_is_satisfiable(sat const& sat) -> satisfiability;
 }

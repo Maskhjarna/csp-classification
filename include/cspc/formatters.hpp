@@ -3,88 +3,90 @@
 #include "data_structures.hpp"
 #include <fmt/format.h>
 
-template <typename T> struct fmt::formatter<FixedSizeVector<T>> {
+template <> struct fmt::formatter<cspc::relation_entry> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(FixedSizeVector<T> const& array, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::relation_entry const& array, FormatContext& ctx) const
+		-> decltype(ctx.out()) {
 		return fmt::format_to(ctx.out(), "({})", fmt::join(array.begin(), array.end(), ", "));
 	}
 };
 
-template <> struct fmt::formatter<Relation> {
+template <> struct fmt::formatter<cspc::relation> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(Relation const& relation, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::relation const& relation, FormatContext& ctx) const -> decltype(ctx.out()) {
 		return fmt::format_to(ctx.out(), "[{}]", fmt::join(relation.begin(), relation.end(), ", "));
 	}
 };
 
-template <> struct fmt::formatter<Constraint> {
+template <> struct fmt::formatter<cspc::constraint> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(Constraint const& constraint, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::constraint const& constraint, FormatContext& ctx) const
+		-> decltype(ctx.out()) {
 		return fmt::format_to(
-			ctx.out(), "{{ variables: ({}), relation: {}}}", constraint.variables,
-			constraint.relation);
+			ctx.out(), "{{ variables: ({}), relation: {}}}", constraint.variables(),
+			constraint.get_relation());
 	}
 };
 
-template <> struct fmt::formatter<CSP> {
+template <> struct fmt::formatter<cspc::csp> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(CSP const& csp, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::csp const& csp, FormatContext& ctx) const -> decltype(ctx.out()) {
 		return fmt::format_to(
-			ctx.out(), "CSP{{\n\t{}\n}}",
+			ctx.out(), "csp{{\n\t{}\n}}",
 			fmt::join(csp.constraints().begin(), csp.constraints().end(), ",\n\t"));
 	}
 };
 
-template <> struct fmt::formatter<Literal> {
+template <> struct fmt::formatter<cspc::literal> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(Literal const& literal, FormatContext& ctx) const -> decltype(ctx.out()) {
-		const auto prefix = literal.variable < 0 ? "¬" : "";
-		return fmt::format_to(ctx.out(), "{}{}", prefix, literal.variable);
+	auto format(cspc::literal const& literal, FormatContext& ctx) const -> decltype(ctx.out()) {
+		const auto prefix = literal.value < 0 ? "¬" : "";
+		return fmt::format_to(ctx.out(), "{}{}", prefix, literal.value);
 	}
 };
 
-template <> struct fmt::formatter<Clause> {
+template <> struct fmt::formatter<cspc::clause> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(Clause const& clause, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::clause const& clause, FormatContext& ctx) const -> decltype(ctx.out()) {
 		return fmt::format_to(ctx.out(), "({})", fmt::join(clause.begin(), clause.end(), " ∨ "));
 	}
 };
 
-template <> struct fmt::formatter<SAT> {
+template <> struct fmt::formatter<cspc::sat> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(SAT const& sat, FormatContext& ctx) const -> decltype(ctx.out()) {
+	auto format(cspc::sat const& sat, FormatContext& ctx) const -> decltype(ctx.out()) {
 		return fmt::format_to(
 			ctx.out(), "SAT{{\n\t{}\n}}",
 			fmt::join(sat.clauses().begin(), sat.clauses().end(), " ∧\n\t"));
 	}
 };
 
-template <> struct fmt::formatter<Satisfiability> {
+template <> struct fmt::formatter<cspc::satisfiability> {
 	template <typename ParseContext> constexpr auto parse(ParseContext& ctx) { return ctx.begin(); }
 
 	template <typename FormatContext>
-	auto format(Satisfiability const& satisfiability, FormatContext& ctx) const
+	auto format(cspc::satisfiability const& satisfiability, FormatContext& ctx) const
 		-> decltype(ctx.out()) {
 		auto str = std::string{};
 		switch (satisfiability) {
-		case SATISFIABLE:
+		case cspc::SATISFIABLE:
 			str = "Satisfiable";
 			break;
-		case UNSATISFIABLE:
+		case cspc::UNSATISFIABLE:
 			str = "Unatisfiable";
 			break;
 		}

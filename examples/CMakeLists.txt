@@ -24,3 +24,19 @@ add_cspc_example(
 add_cspc_example(
 	siggers_all_ternary_on_domain_2
 	"siggers_all_ternary_on_domain_2.cpp")
+
+add_cspc_example(
+	siggers_all_ternary_on_domain_3
+	"siggers_all_ternary_on_domain_2.cpp")
+
+add_cspc_example(
+	siggers_all_quaternary_on_domain_2
+	"siggers_all_quaternary_on_domain_2.cpp")
+
+add_cspc_example(
+	siggers_all_quaternary_on_domain_3
+	"siggers_all_quaternary_on_domain_3.cpp")
+
+add_cspc_example(
+	minizinc_siggers_all_binary_on_domain_2
+	"minizinc_siggers_all_binary_on_domain_2.cpp")

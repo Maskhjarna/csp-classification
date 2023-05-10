@@ -10,41 +10,41 @@
 namespace cspc {
 
 namespace __internal {
-template <std::output_iterator<Clause> OutputIterator>
+template <std::output_iterator<clause> OutputIterator>
 auto create_nogood_clauses(
-	std::vector<Constraint> const nogoods, size_t n_bits, OutputIterator result) -> OutputIterator {
-	std::ranges::for_each(nogoods, [&](Constraint const& nogood) {
-		const auto arity = nogood.relation.arity();
-		result = std::ranges::transform(nogood.relation, result, [&](auto const& entry) {
-					 auto clause = Clause{};
-					 clause.reserve(n_bits * arity);
+	std::vector<constraint> const nogoods, size_t n_bits, OutputIterator result) -> OutputIterator {
+	std::ranges::for_each(nogoods, [&](constraint const& nogood) {
+		const auto arity = nogood.get_relation().arity();
+		result = std::ranges::transform(nogood.get_relation(), result, [&](auto const& entry) {
+					 auto _clause = clause{};
+					 _clause.reserve(n_bits * arity);
 					 for (auto j = 0u; j < arity; ++j) {
 						 auto v = entry[j];
 						 for (auto k = 0u; k < n_bits; ++k) {
 							 const auto bit = v & 1;
-							 clause.push_back(Literal(
-								 nogood.variables[j] * n_bits + k, bit ? NEGATED : REGULAR));
+							 _clause.push_back(literal(
+								 nogood.variables()[j] * n_bits + k, bit ? NEGATED : REGULAR));
 							 v >>= 1;
 						 }
 					 }
-					 return clause;
+					 return _clause;
 				 }).out;
 	});
 	return result;
 }
 
-auto create_prohibited_value_clause(Variable v, DomainValue d, size_t n_bits) -> Clause {
-	auto clause = Clause{};
-	clause.reserve(n_bits);
+auto create_prohibited_value_clause(variable v, domain_value d, size_t n_bits) -> clause {
+	auto _clause = clause{};
+	_clause.reserve(n_bits);
 	for (auto k = 0u; k < n_bits; ++k) {
 		auto bit = d & 1;
-		clause.push_back(Literal(v * n_bits + k, bit ? NEGATED : REGULAR));
+		_clause.push_back(literal(v * n_bits + k, bit ? NEGATED : REGULAR));
 		d >>= 1;
 	}
-	return clause;
+	return _clause;
 }
 
-template <std::output_iterator<Clause> OutputIterator>
+template <std::output_iterator<clause> OutputIterator>
 auto create_prohibited_value_clauses(
 	size_t n_variables,
 	size_t domain_size,
@@ -60,32 +60,32 @@ auto create_prohibited_value_clauses(
 }
 } // namespace __internal
 
-auto binary_encoding(CSP const& csp) -> SAT {
+auto binary_encoding(csp const& csp) -> sat {
 	const auto n_bits =
 		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
 	const auto inclusive_domain_size = std::pow(2, n_bits);
 	const auto nogoods = __internal::nogoods(csp.constraints(), inclusive_domain_size);
 
-	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &Constraint::relation_size);
-	auto clauses = std::vector<Clause>{};
+	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &constraint::relation_size);
+	auto clauses = std::vector<clause>{};
 	clauses.reserve(n_clauses);
 
 	__internal::create_nogood_clauses(nogoods, n_bits, std::back_inserter(clauses));
 
 	assert(n_clauses == clauses.size());
 
-	return SAT(std::move(clauses));
+	return sat(std::move(clauses));
 }
 
-auto log_encoding(CSP const& csp) -> SAT {
+auto log_encoding(csp const& csp) -> sat {
 	const auto n_bits =
 		u64(std::numeric_limits<size_t>::digits - std::countl_zero(csp.domain_size()));
 	const auto nogoods = __internal::nogoods(csp.constraints(), csp.domain_size());
 	const auto inclusive_domain_size = std::pow(2, n_bits);
 
-	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &Constraint::relation_size) +
+	const auto n_clauses = gautil::fold(nogoods, 0ul, std::plus{}, &constraint::relation_size) +
 						   n_bits * csp.n_variables() * (inclusive_domain_size - csp.domain_size());
-	auto clauses = std::vector<Clause>{};
+	auto clauses = std::vector<clause>{};
 	clauses.reserve(n_clauses);
 
 	__internal::create_nogood_clauses(nogoods, n_bits, std::back_inserter(clauses));
@@ -95,7 +95,7 @@ auto log_encoding(CSP const& csp) -> SAT {
 
 	assert(n_clauses == clauses.size());
 
-	return SAT(std::move(clauses));
+	return sat(std::move(clauses));
 }
 
 } // namespace cspc

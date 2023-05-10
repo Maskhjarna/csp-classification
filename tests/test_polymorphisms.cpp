@@ -14,7 +14,8 @@ const auto test_index_to_function_input = TestSingle{
 const auto test_function_input_to_index = TestSingle{
 	"function input to index",
 	[]() {
-		return test_eq(cspc::__internal::function_input_to_index({1, 1, 2, 2}, 3), DomainValue(44));
+		return test_eq(
+			cspc::__internal::function_input_to_index({1, 1, 2, 2}, 3), cspc::domain_value{44});
 	},
 };
 

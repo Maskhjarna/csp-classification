@@ -125,7 +125,7 @@ template <
 	typename Proj = std::identity>
 auto fold(Range&& r, T initial, BinaryOperator op, Proj proj) -> T {
 	for (auto const& val : r) {
-		initial = std::invoke(op, initial, std::invoke(proj, val));
+		initial = op(initial, std::invoke(proj, val));
 	}
 	return initial;
 }

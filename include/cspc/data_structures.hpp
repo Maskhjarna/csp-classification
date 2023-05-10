@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <gautil/types.hpp>
 #include <initializer_list>
 #include <optional>
@@ -8,33 +9,18 @@
 #include <string>
 #include <vector>
 
-using DomainValue = u32;
-using Variable = u32;
+namespace cspc {
+using domain_value = u32;
+using variable = u32;
 
-enum Polarity {
-	NEGATED = -1,
-	REGULAR = 1,
-};
-
-struct Literal {
-	Literal(u32 variable, Polarity polarity) : variable{(i64)polarity * (i64)(variable + 1)} {}
-	i64 variable;
-};
-
-using Clause = std::vector<Literal>;
-
-enum Satisfiability {
-	UNSATISFIABLE = 0,
-	SATISFIABLE,
-};
-
-template <typename T> class FixedSizeVector {
+// a fixed size container
+class relation_entry {
   public:
-	FixedSizeVector(FixedSizeVector const& other) = default;
-	FixedSizeVector(FixedSizeVector&& other) = default;
-	FixedSizeVector(std::initializer_list<T> data)
+	relation_entry(relation_entry const& other) = default;
+	relation_entry(relation_entry&& other) = default;
+	relation_entry(std::initializer_list<domain_value> data)
 		: m_data{std::move(data)}, m_length{data.size()} {}
-	FixedSizeVector(size_t length) : m_data(length), m_length{length} {}
+	relation_entry(size_t length) : m_data(length), m_length{length} {}
 
 	auto length() const -> size_t { return m_length; }
 	auto begin() { return m_data.begin(); }
@@ -42,14 +28,14 @@ template <typename T> class FixedSizeVector {
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
 	auto size() const { return m_data.size(); }
-	auto operator[](size_t i) -> T& { return m_data[i]; };
-	auto operator[](size_t i) const -> T const& { return m_data[i]; };
-	auto operator=(FixedSizeVector const& other) -> FixedSizeVector<T>& = default;
-	auto operator=(FixedSizeVector&& other) -> FixedSizeVector<T>& = default;
-	auto operator==(FixedSizeVector const& other) const -> bool {
+	auto operator[](size_t i) -> domain_value& { return m_data[i]; };
+	auto operator[](size_t i) const -> domain_value const& { return m_data[i]; };
+	auto operator=(relation_entry const& other) -> relation_entry& = default;
+	auto operator=(relation_entry&& other) -> relation_entry& = default;
+	auto operator==(relation_entry const& other) const -> bool {
 		return m_length == other.m_length && m_data == other.m_data;
 	}
-	auto operator<(FixedSizeVector const& other) const -> bool {
+	auto operator<(relation_entry const& other) const -> bool {
 		if (m_length < other.m_length) {
 			return true;
 		}
@@ -64,69 +50,70 @@ template <typename T> class FixedSizeVector {
 		}
 		return false;
 	}
-	auto operator>(FixedSizeVector const& other) const -> bool {
-		return !(this == other) && !(this < other);
+	auto operator>(relation_entry const& other) const -> bool {
+		return !(*this == other) && !(*this < other);
 	}
-	auto operator>=(FixedSizeVector const& other) const -> bool {
-		return (this == other) || (this > other);
+	auto operator>=(relation_entry const& other) const -> bool {
+		return (*this == other) || (*this > other);
 	}
-	auto operator<=(FixedSizeVector const& other) const -> bool {
-		return (this == other) || (this < other);
+	auto operator<=(relation_entry const& other) const -> bool {
+		return (*this == other) || (*this < other);
 	}
 
   private:
-	std::vector<T> m_data;
+	std::vector<domain_value> m_data;
 	size_t m_length;
 };
 
-class Relation {
+class relation {
   public:
-	using Entry = FixedSizeVector<DomainValue>;
-	Relation() : m_arity{0} {}
-	Relation(size_t arity) : m_arity{arity} {}
-	Relation(std::initializer_list<Entry> data)
-		: m_data{std::move(data)}, m_arity{std::ranges::min(m_data, {}, &Entry::size).size()} {}
-	Relation(std::vector<Entry> data)
-		: m_data{std::move(data)}, m_arity{std::ranges::min(m_data, {}, &Entry::size).size()} {}
+	relation() : m_arity{0} {}
+	relation(size_t arity) : m_arity{arity} {}
+	relation(std::initializer_list<relation_entry> data)
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
+	relation(std::vector<relation_entry> data)
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
 
 	auto arity() const -> size_t { return m_arity; }
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
 	auto data() const { return m_data; }
-	auto insert(std::vector<Entry>::const_iterator it, Entry val) {
+	auto insert(std::vector<relation_entry>::const_iterator it, relation_entry val) {
 		m_data.insert(it, std::move(val));
 	}
-	auto add_entry(Entry entry) -> void { m_data.push_back(entry); }
+	auto add_entry(relation_entry entry) -> void { m_data.push_back(entry); }
 	auto reserve(size_t n) { m_data.reserve(n); }
 	auto size() const { return m_data.size(); }
 	auto empty() const -> bool { return m_data.empty(); }
-	auto erase(Entry const& value) {
-		// NOTE: Relation would probably be better represented by an unordered_set, but there is no
+	auto erase(relation_entry const& value) {
+		// NOTE: relation would probably be better represented by an unordered_set, but there is no
 		// stdlib hash function for vectors
 		m_data.erase(std::ranges::find(m_data, value));
 	}
-	auto operator[](size_t i) -> Entry& { return m_data[i]; };
-	auto operator[](size_t i) const -> Entry const& { return m_data[i]; };
+	auto operator[](size_t i) -> relation_entry& { return m_data[i]; };
+	auto operator[](size_t i) const -> relation_entry const& { return m_data[i]; };
 
   private:
-	std::vector<Entry> m_data;
+	std::vector<relation_entry> m_data;
 	size_t m_arity;
 };
 
-struct Identity {
-	Identity(std::initializer_list<std::vector<DomainValue>> elements)
+struct identity {
+	identity(std::initializer_list<std::vector<domain_value>> elements)
 		: elements{std::move(elements)} {}
-	const std::vector<std::vector<DomainValue>> elements{};
+	const std::vector<std::vector<domain_value>> elements{};
 };
 
-struct Operation {
-	Operation(size_t arity, std::initializer_list<Identity> identities)
+struct operation {
+	operation(size_t arity, std::initializer_list<identity> identities)
 		: arity{arity}, identities{std::move(identities)} {}
 	const size_t arity;
-	const std::vector<Identity> identities;
+	const std::vector<identity> identities;
 };
 
-enum ConstraintTag {
+enum constraint_tag {
 	EQ,
 	NE,
 	GT,
@@ -137,72 +124,101 @@ enum ConstraintTag {
 	OTHER,
 };
 
-class Constraint {
+class constraint {
   public:
 	// TODO: auto find constraint tag / construct from constraint tag
-	Constraint(
-		Relation const& relation, std::vector<Variable> const& variables, ConstraintTag tag = OTHER)
-		: relation{relation}, variables{variables}, tag{tag} {}
-	auto relation_size() const -> size_t { return relation.size(); }
-	auto arity() const -> size_t { return variables.size(); }
+	constraint(
+		relation const& relation,
+		std::vector<variable> const& variables,
+		constraint_tag tag = OTHER)
+		: m_relation{relation}, m_variables{variables}, m_tag{tag} {}
+	auto relation_size() const -> size_t { return m_relation.size(); }
+	auto arity() const -> size_t { return m_variables.size(); }
+	auto get_relation() const -> relation { return m_relation; }
+	auto variables() const -> std::vector<variable> { return m_variables; }
+	auto tag() const -> constraint_tag { return m_tag; }
 
-	const Relation relation;
-	const std::vector<Variable> variables;
-	const ConstraintTag tag;
+  private:
+	relation m_relation;
+	std::vector<variable> m_variables;
+	constraint_tag m_tag;
 };
 
-class CSP {
+class csp {
   public:
-	CSP(std::vector<Constraint> const& constraints)
-		: _n_variables{[&constraints]() {
-			  auto max_variable = Variable{0};
+	csp(std::vector<constraint> const& constraints)
+		: m_n_variables{[&constraints]() {
+			  auto max_variable = variable{0};
 			  for (auto const& constraint : constraints) {
-				  if (constraint.variables.empty()) {
+				  if (constraint.variables().empty()) {
 					  continue;
 				  }
-				  max_variable = std::max(max_variable, std::ranges::max(constraint.variables));
+				  max_variable = std::max(max_variable, std::ranges::max(constraint.variables()));
 			  }
 			  return max_variable + 1;
 		  }() + 1},
-		  _domain_size{[&constraints]() {
-			  auto max_domain_size = Variable{0};
+		  m_domain_size{[&constraints]() {
+			  auto max_domain_size = variable{0};
 			  for (auto const& constraint : constraints) {
-				  if (constraint.relation.empty()) {
+				  if (constraint.get_relation().empty()) {
 					  continue;
 				  }
-				  for (auto const& entry : constraint.relation) {
+				  for (auto const& entry : constraint.get_relation()) {
 					  max_domain_size = std::max(max_domain_size, std::ranges::max(entry));
 				  }
 			  }
 			  return max_domain_size;
 		  }() + 1},
-		  _constraints{std::move(constraints)} {}
-	CSP(CSP&& csp) = default;
-	CSP(CSP const& csp) = default;
-	auto operator=(CSP const& other) -> CSP& = default;
-	auto operator=(CSP&& other) -> CSP& = default;
+		  m_constraints{std::move(constraints)} {}
+	csp(csp&& csp) = default;
+	csp(csp const& csp) = default;
+	auto operator=(csp const& other) -> csp& = default;
+	auto operator=(csp&& other) -> csp& = default;
 
-	auto n_variables() const -> size_t { return _n_variables; }
-	auto domain_size() const -> size_t { return _domain_size; }
-	auto constraints() const -> std::vector<Constraint> const& { return _constraints; }
+	auto n_variables() const -> size_t { return m_n_variables; }
+	auto domain_size() const -> size_t { return m_domain_size; }
+	auto constraints() const -> std::vector<constraint> const& { return m_constraints; }
 
   private:
-	size_t _n_variables;
-	size_t _domain_size;
-	std::vector<Constraint> _constraints{};
+	size_t m_n_variables;
+	size_t m_domain_size;
+	std::vector<constraint> m_constraints{};
 };
 
-class SAT {
+enum polarity {
+	NEGATED = -1,
+	REGULAR = 1,
+};
+
+struct literal {
+	literal(u32 variable, polarity pol) : value{(i64)pol * (i64)(variable + 1)} {}
+	auto variable() const -> u32 { return std::abs(value); }
+	i64 value;
+};
+
+using clause = std::vector<literal>;
+
+class sat {
   public:
-	SAT(std::vector<Clause> clauses) : _clauses{std::move(clauses)} {}
-	SAT(std::initializer_list<Clause> clauses) : _clauses{std::move(clauses)} {}
-	SAT(SAT&& other) = default;
-	SAT(SAT const& other) = default;
-	auto operator=(SAT const& other) -> SAT& = default;
-	auto operator=(SAT&& other) -> SAT& = default;
+	sat(std::vector<clause> clauses) : _clauses{std::move(clauses)} {}
+	sat(std::initializer_list<clause> clauses) : _clauses{std::move(clauses)} {}
+	sat(sat&& other) = default;
+	sat(sat const& other) = default;
+	auto operator=(sat const& other) -> sat& = default;
+	auto operator=(sat&& other) -> sat& = default;
 
-	auto clauses() const -> std::vector<Clause> const& { return _clauses; }
+	auto clauses() const -> std::vector<clause> const& { return _clauses; }
 
   private:
-	std::vector<Clause> _clauses{};
+	std::vector<clause> _clauses{};
 };
+
+// returned by solvers
+enum satisfiability {
+	UNSATISFIABLE = 0,
+	SATISFIABLE,
+};
+
+using solver = std::function<satisfiability(sat)>;
+
+} // namespace cspc
