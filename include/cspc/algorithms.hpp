@@ -4,6 +4,8 @@
 #include <cmath>
 #include <functional>
 
+#include <spdlog/spdlog.h>
+
 namespace cspc {
 
 namespace __internal {

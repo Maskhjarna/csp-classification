@@ -190,7 +190,12 @@ auto main() -> int {
 			});
 		});
 
-	std::locale::global(std::locale("en_US")); // NOTE: for comma sep thousands
+	// NOTE: for comma sep thousands
+	try {
+		std::locale::global(std::locale("en_US.UTF8"));
+	} catch (std::runtime_error e) {
+		spdlog::warn("Failed to set global locale to \"en_US.UTF8\".");
+	}
 	show_profiles_raw(profiles);
 	// std::ranges::for_each(profiles, show_profile);
 

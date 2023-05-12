@@ -13,7 +13,6 @@ auto csp_to_minizinc(cspc::csp const& csp) -> std::string {
 	const auto header = fmt::format(
 		"set of int: DOM = 0..{domain_size};\n"
 		"int: n = {n_variables};\n"
-		"\n"
 		"array [0..n] of var DOM: data;\n",
 		fmt::arg("n_variables", csp.n_variables() - 1),
 		fmt::arg("domain_size", csp.domain_size() - 1));
@@ -21,7 +20,7 @@ auto csp_to_minizinc(cspc::csp const& csp) -> std::string {
 	const auto footer = "\nsolve satisfy;\noutput [];";
 
 	auto body = std::vector<std::string>{};
-	body.resize(csp.constraints().size());
+	body.reserve(csp.constraints().size());
 	std::ranges::transform(
 		csp.constraints(), std::back_inserter(body), [&](auto const& constraint) {
 			switch (constraint.tag()) {
@@ -63,14 +62,14 @@ auto csp_to_minizinc(cspc::csp const& csp) -> std::string {
 							literals[i] =
 								fmt::format("data[{}] == {}", constraint.variables()[i], row[i]);
 						}
-						return fmt::format("{}\n", fmt::join(literals, " /\\ "));
+						return fmt::format("{}", fmt::join(literals, " /\\ "));
 					});
-				return fmt::format("\nconstraint ({});", fmt::join(clauses, " \\/ "));
+				return fmt::format("constraint ({});", fmt::join(clauses, " \\/ "));
 			}
 			}
 			spdlog::critical("Unexhaustive switch");
 			exit(EXIT_FAILURE);
-			return std::string{};
+			return std::string{}; // hushes warning
 		});
 
 	return fmt::format("{}\n{}\n{}", header, fmt::join(body, "\n"), footer);
