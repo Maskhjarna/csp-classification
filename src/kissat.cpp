@@ -20,7 +20,7 @@ auto kissat_is_satisfiable(sat const& sat) -> satisfiability {
 	case 20:
 		return UNSATISFIABLE;
 	default:
-		spdlog::critical("unhandled kissat response");
+		spdlog::critical("Unhandled kissat response");
 		exit(EXIT_FAILURE);
 	}
 }

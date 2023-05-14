@@ -162,7 +162,7 @@ auto solve_with_encoding(std::vector<cspc::relation> const& relations, Encoding 
 }
 
 template <typename Encoding>
-auto encoding_test_bundle(std::string const& name, Encoding encoding) -> TestBundle {
+auto test_encoding_full(std::string const& name, Encoding encoding) -> TestBundle {
 	return TestBundle{
 		name,
 		{
@@ -184,14 +184,62 @@ auto encoding_test_bundle(std::string const& name, Encoding encoding) -> TestBun
 		}};
 }
 
+template <typename Encoding>
+auto test_encoding_simple(std::string const& name, Encoding encoding) -> TestBundle {
+	return TestBundle{
+		name,
+		{
+			[encoding]() {
+				const auto constraints = std::vector<cspc::constraint>{
+					cspc::constraint(cspc::eq_relation(2, 2), {0, 1}),
+					cspc::constraint(cspc::eq_relation(2, 2), {1, 2}),
+				};
+				const auto csp = cspc::csp(constraints);
+				const auto sat = encoding(csp);
+				return test_eq(cspc::kissat_is_satisfiable(sat), cspc::SATISFIABLE);
+			},
+			[encoding]() {
+				spdlog::info(cspc::constraint(cspc::neq_relation(3, 2), {0, 1, 2}));
+				const auto constraints = std::vector<cspc::constraint>{
+					cspc::constraint(cspc::eq_relation(3, 2), {0, 1, 2}),
+					cspc::constraint(cspc::neq_relation(3, 2), {0, 1, 2}),
+				};
+				const auto csp = cspc::csp(constraints);
+				const auto sat = encoding(csp);
+				return test_eq(cspc::kissat_is_satisfiable(sat), cspc::UNSATISFIABLE);
+			},
+			[encoding]() {
+				const auto constraints = std::vector<cspc::constraint>{
+					cspc::constraint(cspc::eq_relation(2, 2), {0, 1}),
+					cspc::constraint(cspc::eq_relation(2, 2), {1, 2}),
+					cspc::constraint(cspc::neq_relation(2, 2), {0, 2}),
+				};
+				const auto csp = cspc::csp(constraints);
+				const auto sat = encoding(csp);
+				return test_eq(cspc::kissat_is_satisfiable(sat), cspc::UNSATISFIABLE);
+			},
+		},
+	};
+}
+
 const TestModule test_encodings = {
 	"test encodings",
 	{
-		encoding_test_bundle("test direct encoding", cspc::direct_encoding),
-		encoding_test_bundle("test multivalued direct encoding", cspc::multivalued_direct_encoding),
-		encoding_test_bundle("test binary encoding", cspc::binary_encoding),
-		encoding_test_bundle("test log encoding", cspc::log_encoding),
-		encoding_test_bundle("test label cover encoding", cspc::label_cover_encoding),
-		encoding_test_bundle(
+		test_encoding_simple("test direct encoding simple", cspc::direct_encoding),
+		test_encoding_simple(
+			"test multivalued direct encoding simple", cspc::multivalued_direct_encoding),
+		test_encoding_simple("test binary encoding simple", cspc::binary_encoding),
+		test_encoding_simple("test log encoding simple", cspc::log_encoding),
+		test_encoding_simple("test label cover encoding simple", cspc::label_cover_encoding),
+		test_encoding_simple(
 			"test multivalued label cover encoding", cspc::multivalued_label_cover_encoding),
+		test_encoding_full("test direct encoding pipeline", cspc::direct_encoding),
+		test_encoding_full(
+			"test multivalued direct encoding pipeline", cspc::multivalued_direct_encoding),
+		test_encoding_full("test binary encoding pipeline", cspc::binary_encoding),
+		test_encoding_full("test log encoding pipeline", cspc::log_encoding),
+		test_encoding_full("test label cover encoding pipeline", cspc::label_cover_encoding),
+		test_encoding_full(
+			"test multivalued label cover encoding pipeline",
+			cspc::multivalued_label_cover_encoding),
 	}};

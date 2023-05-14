@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <functional>
 #include <gautil/overload.hpp>
+#include <spdlog/spdlog.h>
 #include <variant>
 
 struct TestSuccess {};

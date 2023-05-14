@@ -5,8 +5,8 @@
 
 namespace cspc {
 namespace __internal {
-template <std::output_iterator<clause> outputiterator>
-auto at_least_one_clauses(csp const& csp, outputiterator result) -> outputiterator {
+template <std::output_iterator<clause> OutputIterator>
+auto at_least_one_clauses(csp const& csp, OutputIterator result) -> OutputIterator {
 	const auto domain_size = csp.domain_size();
 	for (auto var = variable(0); var < csp.n_variables(); ++var) {
 		auto _clause = clause{};
@@ -20,8 +20,8 @@ auto at_least_one_clauses(csp const& csp, outputiterator result) -> outputiterat
 	return result;
 }
 
-template <std::output_iterator<clause> outputiterator>
-auto at_most_one_clauses(csp const& csp, outputiterator result) -> outputiterator {
+template <std::output_iterator<clause> OutputIterator>
+auto at_most_one_clauses(csp const& csp, OutputIterator result) -> OutputIterator {
 	const auto domain_size = csp.domain_size();
 	for (auto var = variable(0); var < csp.n_variables(); ++var) {
 		for (auto k = 0u; k < domain_size; ++k) {

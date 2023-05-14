@@ -140,7 +140,7 @@ auto neq_relation(size_t arity, size_t domain_size) -> relation {
 
 auto eq_relation(size_t arity, size_t domain_size) -> relation {
 	return create_relation<relation_entry>(arity, domain_size, [](relation_entry const& range) {
-		return std::ranges::adjacent_find(range, std::equal_to()) != range.end();
+		return std::ranges::adjacent_find(range, std::not_equal_to()) == range.end();
 	});
 }
 

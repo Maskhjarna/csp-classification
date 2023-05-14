@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <gautil/types.hpp>
 #include <initializer_list>
@@ -70,11 +71,15 @@ class relation {
 	relation() : m_arity{0} {}
 	relation(size_t arity) : m_arity{arity} {}
 	relation(std::initializer_list<relation_entry> data)
-		: m_data{std::move(data)},
-		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
+		: m_data{std::move(data)}, m_arity{
+									   std::ranges::min(m_data, {}, &relation_entry::size).size()} {
+		assert(m_data.size() > 0);
+	}
 	relation(std::vector<relation_entry> data)
-		: m_data{std::move(data)},
-		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
+		: m_data{std::move(data)}, m_arity{
+									   std::ranges::min(m_data, {}, &relation_entry::size).size()} {
+		assert(m_data.size() > 0);
+	}
 
 	auto arity() const -> size_t { return m_arity; }
 	auto begin() const { return m_data.begin(); }
@@ -134,8 +139,8 @@ class constraint {
 		: m_relation{relation}, m_variables{variables}, m_tag{tag} {}
 	auto relation_size() const -> size_t { return m_relation.size(); }
 	auto arity() const -> size_t { return m_variables.size(); }
-	auto get_relation() const -> relation { return m_relation; }
-	auto variables() const -> std::vector<variable> { return m_variables; }
+	auto get_relation() const -> relation const& { return m_relation; }
+	auto variables() const -> std::vector<variable> const& { return m_variables; }
 	auto tag() const -> constraint_tag { return m_tag; }
 
   private:

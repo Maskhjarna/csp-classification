@@ -17,15 +17,17 @@ add_library(${PROJECT_NAME}
   "include/cspc/kissat.hpp"
   "include/cspc/minizinc.hpp"
   "include/cspc/algorithms.hpp"
-  "include/cspc/encodings/binary.hpp"
+  "include/cspc/encodings/common.hpp"
   "include/cspc/encodings/direct.hpp"
+  "include/cspc/encodings/binary.hpp"
+  "include/cspc/encodings/label_cover.hpp"
 
   "src/minizinc.cpp"
   "src/kissat.cpp"
   "src/encodings/common.cpp"
+  "src/encodings/direct.cpp"
   "src/encodings/binary.cpp"
   "src/encodings/label_cover.cpp"
-  "src/encodings/direct.cpp"
   "src/algorithms.cpp")
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)

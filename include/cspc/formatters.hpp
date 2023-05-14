@@ -51,7 +51,7 @@ template <> struct fmt::formatter<cspc::literal> {
 	template <typename FormatContext>
 	auto format(cspc::literal const& literal, FormatContext& ctx) const -> decltype(ctx.out()) {
 		const auto prefix = literal.value < 0 ? "¬" : "";
-		return fmt::format_to(ctx.out(), "{}{}", prefix, literal.value);
+		return fmt::format_to(ctx.out(), "{}{}", prefix, std::abs(literal.value));
 	}
 };
 
@@ -70,8 +70,7 @@ template <> struct fmt::formatter<cspc::sat> {
 	template <typename FormatContext>
 	auto format(cspc::sat const& sat, FormatContext& ctx) const -> decltype(ctx.out()) {
 		return fmt::format_to(
-			ctx.out(), "SAT{{\n\t{}\n}}",
-			fmt::join(sat.clauses().begin(), sat.clauses().end(), " ∧\n\t"));
+			ctx.out(), "\n\t{}\n", fmt::join(sat.clauses().begin(), sat.clauses().end(), " ∧\n\t"));
 	}
 };
 
