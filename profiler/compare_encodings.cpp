@@ -37,7 +37,7 @@ struct Profile {
 
 auto sat_n_variables(cspc::sat const& sat) -> size_t {
 	const auto result = gautil::fold(
-		sat.clauses(), 0ul, [&](auto lhs, auto rhs) { return std::max(lhs, (u64)rhs); },
+		sat.clauses(), u64(0), [&](u64 lhs, u64 rhs) { return std::max(lhs, rhs); },
 		[&](auto const& clause) {
 			return std::ranges::max(clause, std::greater{}, &cspc::literal::variable).variable();
 		});

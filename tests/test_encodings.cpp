@@ -199,7 +199,6 @@ auto test_encoding_simple(std::string const& name, Encoding encoding) -> TestBun
 				return test_eq(cspc::kissat_is_satisfiable(sat), cspc::SATISFIABLE);
 			},
 			[encoding]() {
-				spdlog::info(cspc::constraint(cspc::neq_relation(3, 2), {0, 1, 2}));
 				const auto constraints = std::vector<cspc::constraint>{
 					cspc::constraint(cspc::eq_relation(3, 2), {0, 1, 2}),
 					cspc::constraint(cspc::neq_relation(3, 2), {0, 1, 2}),
