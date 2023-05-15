@@ -8,7 +8,6 @@ endif()
 add_library(cspc_profiler_base INTERFACE)
 target_link_libraries(cspc_profiler_base INTERFACE
 	Threads::Threads
-	tbb
 	cspc)
 
 if (NOT APPLE AND NOT WIN32 AND UNIX)
