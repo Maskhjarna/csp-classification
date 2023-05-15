@@ -1,7 +1,6 @@
 #include "cspc/encodings/binary.hpp"
 
 #include "cspc/algorithms.hpp"
-#include <bits/iterator_concepts.h>
 #include <cmath>
 #include <gautil/functional.hpp>
 #include <numeric>
