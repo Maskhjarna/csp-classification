@@ -1,12 +1,15 @@
 #include "cspc/kissat.hpp"
 
 #include "cspc/data_structures.hpp"
+#include "gautil/functional.hpp"
 #include <memory>
 #include <spdlog/spdlog.h>
 
 namespace cspc {
 auto kissat_is_satisfiable(sat const& sat) -> satisfiability {
 	auto solver = std::unique_ptr<kissat, void (*)(kissat*)>(kissat_init(), kissat_release);
+	const auto n_literals = gautil::fold(sat.clauses(), int(0), std::plus{}, &clause::size);
+	kissat_reserve(solver.get(), n_literals);
 	for (auto const& clause : sat.clauses()) {
 		for (auto const& lit : clause) {
 			kissat_add(solver.get(), lit.value);
