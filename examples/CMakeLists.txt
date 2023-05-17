@@ -38,6 +38,10 @@ add_cspc_example(
 	"siggers_all_quaternary_on_domain_3.cpp")
 
 add_cspc_example(
+	siggers_binary_neq_on_domain_5
+	"siggers_binary_neq_on_domain_5.cpp")
+
+add_cspc_example(
 	siggers_binary_neq_on_domain_6
 	"siggers_binary_neq_on_domain_6.cpp")
 
@@ -48,6 +52,14 @@ add_cspc_example(
 add_cspc_example(
 	siggers_ternary_neq_on_domain_3
 	"siggers_ternary_neq_on_domain_3.cpp")
+
+add_cspc_example(
+	siggers_ternary_neq_on_domain_4
+	"siggers_ternary_neq_on_domain_4.cpp")
+
+add_cspc_example(
+	siggers_quaternary_neq_on_domain_2
+	"siggers_quaternary_neq_on_domain_2.cpp")
 
 add_cspc_example(
 	siggers_quaternary_neq_on_domain_3
@@ -64,6 +76,10 @@ add_cspc_example(
 add_cspc_example(
 	siggers_senary_neq_on_domain_2
 	"siggers_senary_neq_on_domain_2.cpp")
+
+add_cspc_example(
+	siggers_senary_neq_on_domain_3
+	"siggers_senary_neq_on_domain_3.cpp")
 
 add_cspc_example(
 	minizinc_siggers_all_binary_on_domain_2
