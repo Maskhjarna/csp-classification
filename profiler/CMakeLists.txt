@@ -1,7 +1,7 @@
 project("cspc_profiling")
 
 find_package(Threads REQUIRED)
-if (NOT APPLE AND NOT WIN32 AND UNIX)
+if (NOT APPLE AND NOT WIN32 AND UNIX AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 	find_package(TBB REQUIRED COMPONENTS tbb)
 endif()
 
