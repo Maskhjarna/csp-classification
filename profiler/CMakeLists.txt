@@ -10,7 +10,7 @@ target_link_libraries(cspc_profiler_base INTERFACE
 	Threads::Threads
 	cspc)
 
-if (NOT APPLE AND NOT WIN32 AND UNIX)
+if (NOT APPLE AND NOT WIN32 AND UNIX AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 	target_link_libraries(cspc_profiler_base INTERFACE tbb)
 endif()
 
