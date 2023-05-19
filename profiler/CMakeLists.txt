@@ -1,7 +1,7 @@
 project("cspc_profiling")
 
 find_package(Threads REQUIRED)
-if (NOT APPLE AND NOT WIN32 AND UNIX AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+if (NOT APPLE AND NOT WIN32 AND UNIX)
 	find_package(TBB REQUIRED COMPONENTS tbb)
 endif()
 
@@ -10,7 +10,7 @@ target_link_libraries(cspc_profiler_base INTERFACE
 	Threads::Threads
 	cspc)
 
-if (NOT APPLE AND NOT WIN32 AND UNIX AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+if (NOT APPLE AND NOT WIN32 AND UNIX)
 	target_link_libraries(cspc_profiler_base INTERFACE tbb)
 endif()
 

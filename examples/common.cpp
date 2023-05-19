@@ -1,6 +1,5 @@
 #include "common.hpp"
 #include "cspc/encodings/direct.hpp"
-#include "cspc/minizinc.hpp"
 #include "gautil/functional.hpp"
 #include <chrono>
 #include <cspc/algorithms.hpp>
@@ -15,13 +14,6 @@ auto duration_to_precise_ms(auto duration) -> f64 {
 auto encoding_siggers_checker() -> cspc::polymorphism_checker {
 	return cspc::create_encoding_solver(
 		cspc::siggers_operation(), cspc::multivalued_direct_encoding, cspc::kissat_is_satisfiable);
-}
-
-auto minizinc_siggers_checker() -> cspc::polymorphism_checker {
-	return [&](cspc::relation const& relation) {
-		const auto csp = cspc::to_preserves_operation_csp(cspc::siggers_operation(), relation);
-		return cspc::minizinc_is_satisfiable(csp).value();
-	};
 }
 
 auto check_single(cspc::relation const& relation, cspc::polymorphism_checker checker) -> void {

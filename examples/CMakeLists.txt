@@ -10,84 +10,20 @@ function(add_cspc_example name files)
 endfunction()
 
 add_cspc_example(
-	siggers_all_binary_on_domain_2
-	"siggers_all_binary_on_domain_2.cpp")
+	siggers_all_nary_on_domain_d
+	"siggers_all_nary_on_domain_d.cpp")
 
 add_cspc_example(
-	siggers_all_binary_on_domain_3
-	"siggers_all_binary_on_domain_3.cpp")
+	siggers_nary_neq_on_domain_d
+	"siggers_nary_neq_on_domain_d.cpp")
 
 add_cspc_example(
-	siggers_all_binary_on_domain_4
-	"siggers_all_binary_on_domain_4.cpp")
-
-add_cspc_example(
-	siggers_all_ternary_on_domain_2
-	"siggers_all_ternary_on_domain_2.cpp")
-
-add_cspc_example(
-	siggers_all_ternary_on_domain_3
-	"siggers_all_ternary_on_domain_3.cpp")
-
-add_cspc_example(
-	siggers_all_quaternary_on_domain_2
-	"siggers_all_quaternary_on_domain_2.cpp")
-
-add_cspc_example(
-	siggers_all_quaternary_on_domain_3
-	"siggers_all_quaternary_on_domain_3.cpp")
-
-add_cspc_example(
-	siggers_binary_neq_on_domain_5
-	"siggers_binary_neq_on_domain_5.cpp")
-
-add_cspc_example(
-	siggers_binary_neq_on_domain_6
-	"siggers_binary_neq_on_domain_6.cpp")
-
-add_cspc_example(
-	siggers_binary_neq_on_domain_7
-	"siggers_binary_neq_on_domain_7.cpp")
-
-add_cspc_example(
-	siggers_ternary_neq_on_domain_3
-	"siggers_ternary_neq_on_domain_3.cpp")
-
-add_cspc_example(
-	siggers_ternary_neq_on_domain_4
-	"siggers_ternary_neq_on_domain_4.cpp")
-
-add_cspc_example(
-	siggers_quaternary_neq_on_domain_2
-	"siggers_quaternary_neq_on_domain_2.cpp")
-
-add_cspc_example(
-	siggers_quaternary_neq_on_domain_3
-	"siggers_quaternary_neq_on_domain_3.cpp")
-
-add_cspc_example(
-	siggers_quinary_neq_on_domain_2
-	"siggers_quinary_neq_on_domain_2.cpp")
-
-add_cspc_example(
-	siggers_quinary_neq_on_domain_3
-	"siggers_quinary_neq_on_domain_3.cpp")
-
-add_cspc_example(
-	siggers_senary_neq_on_domain_2
-	"siggers_senary_neq_on_domain_2.cpp")
-
-add_cspc_example(
-	siggers_senary_neq_on_domain_3
-	"siggers_senary_neq_on_domain_3.cpp")
-
-add_cspc_example(
-	minizinc_siggers_all_binary_on_domain_2
+	minizinc_siggers_all_binary_on_domain_2.cpp
 	"minizinc_siggers_all_binary_on_domain_2.cpp")
 
 add_cspc_example(
-	minizinc_code_neq_on_domain_2
-	"minizinc_code_neq_on_domain_2.cpp")
+	minizinc_code_binary_neq_on_domain_2
+	"minizinc_code_binary_neq_on_domain_2.cpp")
 
 add_cspc_example(
 	elements_in_relations
