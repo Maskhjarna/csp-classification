@@ -106,9 +106,12 @@ class relation {
 };
 
 struct identity {
-	identity(std::initializer_list<std::vector<domain_value>> elements)
-		: elements{std::move(elements)} {}
-	const std::vector<std::vector<domain_value>> elements{};
+	identity(
+		std::initializer_list<std::vector<variable>> inputs,
+		std::initializer_list<variable> variables = {})
+		: inputs{std::move(inputs)}, variables{std::move(variables)} {}
+	const std::vector<std::vector<variable>> inputs{};
+	const std::vector<variable> variables{};
 };
 
 struct operation {

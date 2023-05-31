@@ -149,21 +149,33 @@ auto siggers_operation() -> operation { return operation(4, {{{0, 1, 0, 2}, {1, 
 namespace __internal {
 auto operation_identity_constraints(
 	operation const& operation, size_t domain_size, std::vector<constraint>& result) -> void {
-	const auto function_table_entries = std::pow(domain_size, operation.arity);
+	const auto function_table_entries = (u32)std::pow(domain_size, operation.arity);
+	const auto eq = eq_relation(2, domain_size);
 	std::ranges::for_each(operation.identities, [&](auto const& identity) {
-		for (auto i = 0u; i < identity.elements.size(); ++i) {
-			for (auto j = i + 1; j < identity.elements.size(); ++j) {
-				for (auto k = 0u; k < function_table_entries; ++k) {
-					const auto input =
-						__internal::index_to_function_input(k, operation.arity, domain_size);
-					if (!__internal::satisfies_identity(input, identity.elements[i])) {
+		for (auto k = 0u; k < function_table_entries; ++k) {
+			const auto input = __internal::index_to_function_input(k, operation.arity, domain_size);
+			for (auto i = 0u; i < identity.inputs.size(); ++i) {
+				if (!__internal::satisfies_identity(input, identity.inputs[i])) {
+					continue;
+				}
+
+				// function input = function input
+				for (auto j = i + 1; j < identity.inputs.size(); ++j) {
+					const auto mirror =
+						__internal::apply_identity(input, identity.inputs[i], identity.inputs[j]);
+					const auto k_mirror = __internal::function_input_to_index(mirror, domain_size);
+					result.push_back({eq, {k, k_mirror}});
+				}
+
+				// function input = variable
+				for (auto j = 0u; j < identity.variables.size(); ++j) {
+					const auto it = std::ranges::find(identity.inputs[i], identity.variables[j]);
+					if (it == identity.inputs[i].end()) {
 						continue;
 					}
-					const auto mirror = __internal::apply_identity(
-						input, identity.elements[i], identity.elements[j]);
-					const auto k_mirror = __internal::function_input_to_index(mirror, domain_size);
-					const auto relation = eq_relation(2, domain_size);
-					result.push_back(constraint{relation, {k, k_mirror}});
+					const auto index = std::distance(identity.inputs[i].begin(), it);
+					const auto var_csp_var = function_table_entries + input[index];
+					result.push_back({eq, {k, var_csp_var}});
 				}
 			}
 		}
