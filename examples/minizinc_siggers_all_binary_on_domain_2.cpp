@@ -5,7 +5,8 @@
 
 auto minizinc_siggers_checker() -> cspc::polymorphism_checker {
 	return [&](cspc::relation const& relation) {
-		const auto csp = cspc::to_preserves_operation_csp(cspc::siggers_operation(), relation);
+		const auto csp =
+			cspc::construct_preserves_operation_csp(cspc::siggers_operation(), relation);
 		return cspc::minizinc_is_satisfiable(csp).value();
 	};
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
 #include <functional>
 #include <gautil/types.hpp>
 #include <initializer_list>
@@ -11,6 +10,7 @@
 #include <vector>
 
 namespace cspc {
+
 using domain_value = u32;
 using variable = u32;
 
@@ -71,24 +71,17 @@ class relation {
 	relation() : m_arity{0} {}
 	relation(size_t arity) : m_arity{arity} {}
 	relation(std::initializer_list<relation_entry> data)
-		: m_data{std::move(data)}, m_arity{
-									   std::ranges::min(m_data, {}, &relation_entry::size).size()} {
-		assert(m_data.size() > 0);
-	}
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
 	relation(std::vector<relation_entry> data)
-		: m_data{std::move(data)}, m_arity{
-									   std::ranges::min(m_data, {}, &relation_entry::size).size()} {
-		assert(m_data.size() > 0);
-	}
+		: m_data{std::move(data)},
+		  m_arity{std::ranges::min(m_data, {}, &relation_entry::size).size()} {}
 
 	auto arity() const -> size_t { return m_arity; }
 	auto begin() const { return m_data.begin(); }
 	auto end() const { return m_data.end(); }
 	auto data() const { return m_data; }
-	auto insert(std::vector<relation_entry>::const_iterator it, relation_entry val) {
-		m_data.insert(it, std::move(val));
-	}
-	auto add_entry(relation_entry entry) -> void { m_data.push_back(entry); }
+	auto insert(relation_entry entry) -> void { m_data.push_back(entry); }
 	auto reserve(size_t n) { m_data.reserve(n); }
 	auto size() const { return m_data.size(); }
 	auto empty() const -> bool { return m_data.empty(); }
@@ -121,20 +114,12 @@ struct operation {
 	const std::vector<identity> identities;
 };
 
-enum constraint_tag {
-	EQ,
-	NE,
-	GT,
-	GE,
-	LT,
-	LE,
-	IS,
-	OTHER,
-};
+enum constraint_tag { EQ, NE, GT, GE, LT, LE, IS, OTHER };
 
 class constraint {
   public:
-	// TODO: auto find constraint tag / construct from constraint tag
+	// TODO: determine constraint tag
+	// TODO: construct from constraint tag
 	constraint(
 		relation const& relation,
 		std::vector<variable> const& variables,

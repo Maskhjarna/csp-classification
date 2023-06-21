@@ -154,7 +154,8 @@ auto solve_with_encoding(std::vector<cspc::relation> const& relations, Encoding 
 	auto satisfiable = std::vector<cspc::satisfiability>{};
 	satisfiable.reserve(relations.size());
 	std::ranges::transform(relations, std::back_inserter(satisfiable), [&](auto const& relation) {
-		const auto csp = cspc::to_preserves_operation_csp(cspc::siggers_operation(), relation);
+		const auto csp =
+			cspc::construct_preserves_operation_csp(cspc::siggers_operation(), relation);
 		const auto sat = encoding(csp);
 		return cspc::kissat_is_satisfiable(sat);
 	});

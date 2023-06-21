@@ -1,6 +1,7 @@
 #include "cspc/encodings/binary.hpp"
 
 #include "cspc/algorithms.hpp"
+#include "cspc/encodings/common.hpp"
 #include <cmath>
 #include <gautil/functional.hpp>
 #include <numeric>

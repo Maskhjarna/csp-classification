@@ -5,7 +5,8 @@
 
 auto count_csp_constraint_elements(std::vector<cspc::relation> const& relations) -> size_t {
 	return gautil::fold(relations, 0ul, std::plus{}, [&](auto const& relation) {
-		const auto csp = cspc::to_preserves_operation_csp(cspc::siggers_operation(), relation);
+		const auto csp =
+			cspc::construct_preserves_operation_csp(cspc::siggers_operation(), relation);
 		gautil::fold(csp.constraints(), 0ul, std::plus{}, &cspc::constraint::relation_size);
 		return gautil::fold(csp.constraints(), 0ul, std::plus{}, &cspc::constraint::relation_size);
 	});

@@ -5,6 +5,8 @@
 
 namespace cspc {
 namespace __internal {
+extern auto nogoods(std::vector<cspc::constraint> const& constraints, size_t domain_size)
+	-> std::vector<cspc::constraint>;
 template <std::output_iterator<clause> OutputIterator>
 auto at_least_one_clauses(csp const& csp, OutputIterator result) -> OutputIterator {
 	const auto domain_size = csp.domain_size();

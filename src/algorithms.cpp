@@ -21,6 +21,54 @@ auto increment_in_domain(relation_entry& tuple, size_t domain_size) -> void {
 	}
 }
 
+auto index_to_function_input(domain_value index, size_t arity, size_t domain_size)
+	-> relation_entry {
+	auto result = relation_entry(arity);
+	for (auto i = size_t(0); i < arity; ++i) {
+		const auto remainder = index % domain_size;
+		result[arity - 1 - i] = remainder;
+		index = (index - remainder) / domain_size;
+	}
+	return result;
+}
+
+auto function_input_to_index(relation_entry const& input, size_t domain_size) -> domain_value {
+	auto result = size_t{0};
+	auto multiplier = size_t{1};
+	for (auto i = size_t(0); i < input.length(); ++i) {
+		result += input[input.length() - 1 - i] * multiplier;
+		multiplier *= domain_size;
+	}
+	return result;
+}
+
+auto satisfies_identity(relation_entry const& input, std::vector<domain_value> const& id) -> bool {
+	for (auto i = size_t(0); i < input.length(); ++i) {
+		for (auto j = i + 1; j < input.length(); ++j) {
+			if ((id[i] == id[j]) && (input[i] != input[j])) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+auto apply_identity(
+	relation_entry const& input,
+	std::vector<domain_value> const& from,
+	std::vector<domain_value> const& to) -> relation_entry {
+	auto result = input;
+	for (auto i = size_t(0); i < from.size(); ++i) {
+		for (auto j = size_t(0); j < to.size(); ++j) {
+			if (from[i] == to[j]) {
+				result[j] = input[i];
+			}
+		}
+	}
+	return result;
+}
+} // namespace __internal
+
 auto create_all_tuples(size_t arity, size_t domain_size) -> std::vector<relation_entry> {
 	const auto n_tuples = std::pow(domain_size, arity);
 	auto result = std::vector<relation_entry>{};
@@ -28,7 +76,7 @@ auto create_all_tuples(size_t arity, size_t domain_size) -> std::vector<relation
 	auto current = relation_entry(arity);
 	gautil::repeat(n_tuples, [&]() {
 		result.push_back(current);
-		increment_in_domain(current, domain_size);
+		__internal::increment_in_domain(current, domain_size);
 	});
 	return result;
 }
@@ -47,69 +95,11 @@ auto inverse(constraint const& _constraint, size_t domain_size) -> constraint {
 	return constraint(std::move(inverse_relation), _constraint.variables());
 }
 
-auto nogoods(std::vector<constraint> const& constraints, size_t domain_size)
-	-> std::vector<constraint> {
-	auto nogoods = std::vector<constraint>{};
-	nogoods.reserve(constraints.size());
-	std::ranges::transform(
-		constraints, std::back_inserter(nogoods),
-		[&](constraint const& constraint) { return __internal::inverse(constraint, domain_size); });
-	return nogoods;
-}
-
-auto index_to_function_input(domain_value index, size_t arity, size_t domain_size)
-	-> relation_entry {
-	auto result = relation_entry(arity);
-	for (auto i = 0u; i < arity; ++i) {
-		const auto remainder = index % domain_size;
-		result[arity - 1 - i] = remainder;
-		index = (index - remainder) / domain_size;
-	}
-	return result;
-}
-
-auto function_input_to_index(relation_entry const& input, size_t domain_size) -> domain_value {
-	auto result = size_t{0};
-	auto multiplier = size_t{1};
-	for (auto i = 0u; i < input.length(); ++i) {
-		result += input[input.length() - 1 - i] * multiplier;
-		multiplier *= domain_size;
-	}
-	return result;
-}
-
-auto satisfies_identity(relation_entry const& input, std::vector<domain_value> const& id) -> bool {
-	for (auto i = 0u; i < input.length(); ++i) {
-		for (auto j = i + 1; j < input.length(); ++j) {
-			if ((id[i] == id[j]) && (input[i] != input[j])) {
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-auto apply_identity(
-	relation_entry const& input,
-	std::vector<domain_value> const& from,
-	std::vector<domain_value> const& to) -> relation_entry {
-	auto result = input;
-	for (auto i = 0u; i < from.size(); ++i) {
-		for (auto j = 0u; j < to.size(); ++j) {
-			if (from[i] == to[j]) {
-				result[j] = input[i];
-			}
-		}
-	}
-	return result;
-}
-} // namespace __internal
-
 auto all_nary_relations(size_t n, size_t domain_size) -> std::vector<relation> {
 	const auto n_tuples = std::pow(domain_size, n);
 
 	// all tetriary tuples of elements in the domain
-	const auto all_tuples = __internal::create_all_tuples(n, domain_size);
+	const auto all_tuples = create_all_tuples(n, domain_size);
 
 	// tuples (a, b, c, ...) where a != b or a != c or ... or b != c or ...
 	// <=> U  \ (a, b, c, ...) where (a == b == c == ...)
@@ -147,14 +137,15 @@ auto eq_relation(size_t arity, size_t domain_size) -> relation {
 auto siggers_operation() -> operation { return operation(4, {{{0, 1, 0, 2}, {1, 0, 2, 1}}}); }
 
 namespace __internal {
-auto operation_identity_constraints(
-	operation const& operation, size_t domain_size, std::vector<constraint>& result) -> void {
+template <std::output_iterator<constraint> OutputIterator>
+auto push_operation_identity_constraints(
+	operation const& operation, size_t domain_size, OutputIterator result) -> OutputIterator {
 	const auto function_table_entries = (u32)std::pow(domain_size, operation.arity);
 	const auto eq = eq_relation(2, domain_size);
 	std::ranges::for_each(operation.identities, [&](auto const& identity) {
-		for (auto k = 0u; k < function_table_entries; ++k) {
+		for (auto k = variable(0); k < function_table_entries; ++k) {
 			const auto input = __internal::index_to_function_input(k, operation.arity, domain_size);
-			for (auto i = 0u; i < identity.inputs.size(); ++i) {
+			for (auto i = size_t(0); i < identity.inputs.size(); ++i) {
 				if (!__internal::satisfies_identity(input, identity.inputs[i])) {
 					continue;
 				}
@@ -164,30 +155,30 @@ auto operation_identity_constraints(
 					const auto mirror =
 						__internal::apply_identity(input, identity.inputs[i], identity.inputs[j]);
 					const auto k_mirror = __internal::function_input_to_index(mirror, domain_size);
-					result.push_back({eq, {k, k_mirror}});
+					*result++ = constraint{eq, {k, k_mirror}};
 				}
 
 				// function input = variable
-				for (auto j = 0u; j < identity.variables.size(); ++j) {
+				for (auto j = size_t(0); j < identity.variables.size(); ++j) {
 					const auto it = std::ranges::find(identity.inputs[i], identity.variables[j]);
 					if (it == identity.inputs[i].end()) {
 						continue;
 					}
 					const auto index = std::distance(identity.inputs[i].begin(), it);
 					const auto var_csp_var = function_table_entries + input[index];
-					result.push_back({eq, {k, var_csp_var}});
+					*result++ = {eq, {k, var_csp_var}};
 				}
 			}
 		}
 	});
+	return result;
 }
 
-auto polymorphism_constraints(
-	constraint const& _constraint,
-	size_t domain_size,
-	size_t operation_arity,
-	std::vector<constraint>& result) -> void {
-	const auto n_indices = _constraint.get_relation().size();
+template <std::output_iterator<constraint> OutputIterator>
+auto push_is_polymorphism_constraint(
+	relation const& _relation, size_t domain_size, size_t operation_arity, OutputIterator result)
+	-> OutputIterator {
+	const auto n_indices = _relation.size();
 	const auto n_iterations = (size_t)std::pow(n_indices, operation_arity);
 	// constraints from operation being polymorphism of all relations
 
@@ -196,40 +187,42 @@ auto polymorphism_constraints(
 	gautil::repeat(n_iterations, [&]() {
 		// extract each column by index in the set of rows and get its index in the function
 		// table
-		auto indices = std::vector<variable>(_constraint.get_relation().arity());
-		for (auto j = 0u; j < _constraint.get_relation().arity(); ++j) {
+		auto indices = std::vector<variable>(_relation.arity());
+		for (auto j = size_t(0); j < _relation.arity(); ++j) {
 			auto input = relation_entry(operation_arity);
-			for (auto k = 0u; k < operation_arity; ++k) {
-				input[k] = _constraint.get_relation()[current_relation_indices[k]][j];
+			for (auto k = size_t(0); k < operation_arity; ++k) {
+				input[k] = _relation[current_relation_indices[k]][j];
 			}
 			indices[j] = __internal::function_input_to_index(input, domain_size);
 		}
 		// the ordered values at the set of indices must be in the relation
-		result.push_back(constraint(_constraint.get_relation(), indices));
+		*result++ = constraint(_relation, indices);
 
 		__internal::increment_in_domain(current_relation_indices, n_indices);
 	});
+	return result;
+}
+
+auto find_relation_domain_size(relation const& _relation) -> size_t {
+	return 1 + gautil::fold(_relation, size_t(0), [](auto const& largest, auto const& entry) {
+			   return std::max(largest, size_t(std::ranges::max(entry)));
+		   });
 }
 } // namespace __internal
 
-auto has_polymorphism_csp(csp const& input_csp, operation const& operation) -> csp {
+auto construct_preserves_operation_csp(operation const& _operation, relation const& _relation)
+	-> csp {
+	const auto domain_size = __internal::find_relation_domain_size(_relation);
+
 	auto constraints = std::vector<constraint>{};
 
-	__internal::operation_identity_constraints(operation, input_csp.domain_size(), constraints);
+	__internal::push_operation_identity_constraints(
+		_operation, domain_size, std::back_inserter(constraints));
 
-	std::ranges::for_each(input_csp.constraints(), [&](constraint const& constraint) {
-		__internal::polymorphism_constraints(
-			constraint, input_csp.domain_size(), operation.arity, constraints);
-	});
+	__internal::push_is_polymorphism_constraint(
+		_relation, domain_size, _operation.arity, std::back_inserter(constraints));
 
 	return csp(std::move(constraints));
-}
-
-auto to_preserves_operation_csp(operation const& operation, relation const& relation) -> csp {
-	auto variables = std::vector<variable>(relation.arity());
-	std::iota(variables.begin(), variables.end(), 0);
-	const auto input = csp({constraint(relation, variables)});
-	return has_polymorphism_csp(input, operation);
 }
 
 } // namespace cspc

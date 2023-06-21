@@ -10,7 +10,7 @@
 #include <gautil/functional.hpp>
 #include <gautil/math.hpp>
 
-constexpr auto N_SAMPLES = 10;
+constexpr auto N_SAMPLES = 30;
 
 auto duration_to_precise_ms(auto duration) -> f64 {
 	return (f64)std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() /
@@ -113,7 +113,7 @@ auto create_profile_for_encoding(
 				csps.reserve(relations.size());
 				std::ranges::transform(
 					relations, std::back_inserter(csps), [&](auto const& relation) {
-						return cspc::to_preserves_operation_csp(siggers, relation);
+						return cspc::construct_preserves_operation_csp(siggers, relation);
 					});
 				return profile_encode_and_encode_plus_solve(encoding, csps);
 			});
@@ -196,8 +196,8 @@ auto main() -> int {
 	} catch (std::runtime_error e) {
 		spdlog::warn("Failed to set global locale to \"en_US.UTF8\".");
 	}
-	show_profiles_raw(profiles);
-	// std::ranges::for_each(profiles, show_profile);
+	// show_profiles_raw(profiles);
+	std::ranges::for_each(profiles, show_profile);
 
 	return EXIT_SUCCESS;
 }
